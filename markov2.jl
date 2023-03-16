@@ -1,14 +1,13 @@
 """
-    update_prob!(Pᵢᵍ::Array{Float64, 2},
-                 Pᵢᴬᵍ::Array{Float64, 2},
-                 Pᵢᴵᵍ::Array{Float64, 2},
-                 Sᵢᵍᵥ::Array{Float64, 2},
-                 τᵢᵍ::Array{Float64, 2},
+    update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
+                 Sᵢᵍᵥ::Array{Float64, 3},
+                 τᵢᵍᵥ::Array{Float64, 3},
                  epi_params::Epidemic_Params,
                  population::Population_Params,
                  κ₀::Float64,
                  ϕ::Float64,
                  δ::Float64,
+                 ϵᵍ::Array{Float64, 1},
                  t::Int64,
                  tᶜ::Int64)
 
@@ -43,6 +42,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
     Γ = epi_params.Γ
     Λ = epi_params.Λ
     
+    # Shortcut to variables
     ρˢᵍᵥ = epi_params.ρˢᵍᵥ
     ρᴱᵍᵥ = epi_params.ρᴱᵍᵥ
     ρᴬᵍᵥ = epi_params.ρᴬᵍᵥ
@@ -114,10 +114,6 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
 
     # Update probabilities
     @inbounds for i in 1:M
-        
-        # Remove patches where you still have unvaccinated susceptibles
-        # idx_ϵ = ρˢᵍᵥ[:, :, t, 1] .* nᵢᵍ[:, :]  .-  ϵᵢᵍ[:, :] 
-        # ϵᵢᵍ = ϵᵢᵍ .* (idx_ϵ .> 0)
 
         # Compute secure households
         CHᵢ = 0.0
@@ -125,10 +121,6 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             for g in 1:G
                 aux = 0.0
                 @simd for v in 1:V
-                    #CHᵢ += (ρˢᵍᵥ[g, i, t, 1]*(v == 1 ? 1 : 0) + ρᴾᴴᵍᵥ[g, i, t, v] + ρᴾᴰᵍᵥ[g, i, t, v] +
-                    #        ρᴴᴿᵍᵥ[g, i, t, v] + ρᴴᴰᵍᵥ[g, i, t, v] + ρᴰᵍᵥ[g, i, t, v] +
-                    #        ρᴿᵍᵥ[g, i, t, v] + CHᵢᵍ[g, i]*(v == 1 ? 1 : 0) ) * population.nᵢᵍ[g, i]
-                    
                     aux += ρᴱᵍᵥ[g, i, t, v] + ρᴬᵍᵥ[g, i, t, v] + ρᴵᵍᵥ[g, i, t, v] 
                 end
                 CHᵢ += ( 1 - aux ) * population.nᵢᵍ[g, i]
@@ -140,7 +132,6 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
         # Update compartmental probabilities
         for g in 1:G
             if tᶜ == t
-                # ATTENZIONE: Why did I put 1?
                 ρˢᵍᵥ[g, i, t, 1] += CHᵢᵍ[g, i]
             end        
         
@@ -199,109 +190,30 @@ end
 
 
 """
-    compute_P!(Pᵢᵍ::Array{Float64, 2},
-                    Pᵢᴬᵍ::Array{Float64, 2},
-                    Pᵢᴵᵍ::Array{Float64, 2},
-                    Sᵢᵍᵥ::Array{Float64, 2},
-                    pᵍ_eff::Array{Float64, 1},
-                    ρˢᵍᵥ::Array{Float64, 3},
-                    ρᴬᵍ::Array{Float64, 3},
-                    ρᴵᵍ::Array{Float64, 3},
-                    Qᵢᵍ::Array{Float64, 3},
-                    nᵢᵍ_eff::Array{Float64, 2},
-                    mobilityᵍ::Array{Float64, 2},
-                    normᵍ::Array{Float64, 2},
-                    βᴬ::Float64,
-                    βᴵ::Float64,
-                    edgelist::Array{Int64, 2},
-                    Rᵢⱼ::Array{Float64, 1},
-                    C::Array{Float64, 2},
-                    M::Int64,
-                    G::Int64,
-                    t::Int64)
+    compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
+               Sᵢᵍᵥ::Array{Float64, 3},
+               pᵍ_eff::Array{Float64, 1},
+               ρˢᵍᵥ::Array{Float64, 4},
+               ρᴬᵍᵥ::Array{Float64, 4},
+               ρᴵᵍᵥ::Array{Float64, 4},
+               Qᵢᵍ::Array{Float64, 3},
+               nᵢᵍ_eff::Array{Float64, 2},
+               mobilityᵍ::Array{Float64, 2},
+               normᵍ::Array{Float64, 2},
+               βᴬᵥ::Float64,
+               βᴵᵥ::Float64,
+               edgelist::Array{Int64, 2},
+               Rᵢⱼ::Array{Float64, 1},
+               C::Array{Float64, 2},
+               M::Int64,
+               G::Int64,
+               V::Int64,
+               t::Int64,
+               rᵥ::Array{Float64, 1},
+               kᵥ::Array{Float64, 1})
 
-Compute ``P_i^g(t)`` and ``Q_i^g(t)`` as described in the referenced paper.
+Compute ``P_i^g_v(t)`` and ``Q_i^g(t)`` as described in the referenced paper. The first quantity is needed to compute the infection probability and the second for the basig reproduction number
 """
-# function compute_P!(Pᵢᵍᵥ::Array{Float64, 3}, # +1 dimension for encoding the sigma
-#                     Sᵢᵍᵥ::Array{Float64, 3},
-#                     pᵍ_eff::Array{Float64, 1},
-#                     ρˢᵍᵥ::Array{Float64, 4},
-#                     ρᴬᵍᵥ::Array{Float64, 4},
-#                     ρᴵᵍᵥ::Array{Float64, 4},
-#                     Qᵢᵍ::Array{Float64, 3},
-#                     nᵢᵍ_eff::Array{Float64, 2},
-#                     mobilityᵍ::Array{Float64, 2},
-#                     normᵍ::Array{Float64, 2},
-#                     βᴬᵥ::Float64,
-#                     βᴵᵥ::Float64,
-#                     edgelist::Array{Int64, 2},
-#                     Rᵢⱼ::Array{Float64, 1},
-#                     C::Array{Float64, 2},
-#                     M::Int64,
-#                     G::Int64,
-#                     V::Int64,
-#                     t::Int64,
-#                     rᵥ::Array{Float64, 1},
-#                     kᵥ::Array{Float64, 1})
-
-#     # Init. aux variables
-#     Sᵢᵍᵥ .= 0 # zeros(G, M, V)
-#     Pᵢᵍᵥ .= 1 # ones(G, M, V) # Necessary in order to use the cumulative product strategy
-#     nˢᵍᵥ_ij = zeros(V)
-    
-#     # Trasmissibility reduction matrix
-#     rk_ij = 0.
-    
-#     @inbounds for indx_e in 1:length(Rᵢⱼ)
-#         i = edgelist[indx_e, 1]
-#         j = edgelist[indx_e, 2]
-#         # i -> j 
-
-#         # Get effective S, A and I
-#         for g in 1:G
-#             # Necessary to get Q_i (not exactly equal to the n_ij of the paper)
-#             # why was there .* ( 1 - kᵥ[:]) ?
-#             nˢᵍᵥ_ij[:] .= ( ρˢᵍᵥ[g, i, t, :] .* (1 .- rᵥ[:]) ) * mobilityᵍ[g, indx_e]
-#             Sᵢᵍᵥ[g, j, :] .= Sᵢᵍᵥ[g, j, :] .+ nˢᵍᵥ_ij[:] / nᵢᵍ_eff[g, j]
-
-#             for v_i in 1:V
-#                 for v_j in 1:V
-#                     for h in 1:G
-#                         nᴬᵍᵥ_ij = ρᴬᵍᵥ[h, i, t, v_i] * mobilityᵍ[h, indx_e]
-#                         nᴵᵍᵥ_ij = ρᴵᵍᵥ[h, i, t, v_i] * mobilityᵍ[h, indx_e]
-#                         rk_ij = (1-rᵥ[v_j])*(1-kᵥ[v_i])
-#                         Pᵢᵍᵥ[g, j, v_j] *= (1 - βᴬᵥ * rk_ij )^(normᵍ[g, j] * C[g, h] * nᴬᵍᵥ_ij / nᵢᵍ_eff[h, j] ) * 
-#                                           (1 - βᴵᵥ * rk_ij)^(normᵍ[g, j] * C[g, h] * nᴵᵍᵥ_ij / nᵢᵍ_eff[h, j] )
-                        
-#                         # the fact that we define Pᵢᵍᵥ with the j instead of the i is due to the fact that i->j
-                        
-#                     end
-#                 end
-#             end
-#         end
-#     end
-    
-#     # Get P
-#     Pᵢᵍᵥ .= 1 .- Pᵢᵍᵥ
-
-#     # Compute Q to get the effective R
-#     @inbounds for indx_e in 1:length(Rᵢⱼ)
-#         i = edgelist[indx_e, 1]
-#         j = edgelist[indx_e, 2] # i->j
-        
-#         for g in 1:G     
-#             for v in 1:V
-#                 @simd for h in 1:G
-#                     #### ATTENTION: Here I changes normᵍ[g, i] to normᵍ[g, j]
-#                     Qᵢᵍ[g, i, t] += normᵍ[g, j] * C[g, h] * Sᵢᵍᵥ[h, j, v] *
-#                     (pᵍ_eff[g] * Rᵢⱼ[indx_e] + (1 - pᵍ_eff[g]) * (i == j ? 1. : 0.))
-#                 end
-#             end
-#         end
-#     end
-# end
-
-##########àà VERSIONE TEMPORANEA DA ELIMINARE #############à
 
 function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
                     Sᵢᵍᵥ::Array{Float64, 3},
@@ -337,7 +249,7 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
 
     @inbounds for indx_e in 1:length(Rᵢⱼ)
         i = edgelist[indx_e, 1]
-        j = edgelist[indx_e, 2]
+        j = edgelist[indx_e, 2] # i->j
 
         # Get effective S, A and I
         for g in 1:G
@@ -363,7 +275,6 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
         end
     end
     
-    ###########DA AGGIORNARE ASSOLUTAMENTE #############à
     # Compute Q to get the effective R
     @inbounds for indx_e in 1:length(Rᵢⱼ)
         i = edgelist[indx_e, 1]
@@ -372,7 +283,7 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
         for g in 1:G     
             for v in 1:V
                 @simd for h in 1:G
-                    #### ATTENTION: Here I changes normᵍ[g, i] to normᵍ[g, j]
+                    #### ATTENTION: Here I changed normᵍ[g, i] to normᵍ[g, j]
                     Qᵢᵍ[g, i, t] += normᵍ[g, j] * C[g, h] * Sᵢᵍᵥ[h, j, v] *
                     (pᵍ_eff[g] * Rᵢⱼ[indx_e] + (1 - pᵍ_eff[g]) * (i == j ? 1. : 0.))
                 end
@@ -393,22 +304,6 @@ Print the status of the epidemic spreading.
 function print_status(epi_params::Epidemic_Params,
                       population::Population_Params,
                       t::Int64)
-    
-"""    
-    s = sum(epi_params.ρˢᵍᵥ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    g0 = sum( epi_params.ρᴳ⁰ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    w1 = sum(epi_params.ρᵂ¹ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    g1 = sum(epi_params.ρᴳ¹ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    k2 = sum(epi_params.ρᴷ²ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    z0 = sum(epi_params.ρᶻ⁰ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    v1 = sum(epi_params.ρᵛ¹ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    z1 = sum(epi_params.ρᶻ¹ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    v2 = sum(epi_params.ρⱽ²ᵍ[:, :, t, 1] .* population.nᵢᵍ[:, :]) 
-    
-    @printf("Time: %d, s: %.2f, g0: %.2f, z0: %.2f, w1: %.2f, g1: %.2f, v1: %.2f, z1: %.2f, k2: %.2f, v2: %.2f\n",
-            t, s, g0, z0, w1, g1, v1, z1, k2, v2)
-    
-"""
 
     players  = sum((epi_params.ρˢᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴾᴰᵍᵥ[:, :, t, :] .+
@@ -455,7 +350,13 @@ function print_status(epi_params::Epidemic_Params,
 end
 
 """
-Print the time series of different indicators of the epidemic
+Get the time series of different indicators of the epidemic:
+ - Infected = I + A
+ - Cases = I + A + PD + PH + HD + HR
+ - Icus = HR + HD
+ - Deaths = D
+ - Vaccinated = All the vaccinated compartments
+ - Daily cases
 """
 
 function time_series(epi_params::Epidemic_Params,
@@ -550,8 +451,6 @@ function optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
     Nᵥ = sum(ϵᵍ) # Total number of vaccines
     (G, M) = size(nᵢᵍ)
     
-    ####### PROVA #########
-    
     only_positive = all(ρˢᵍᵥ[:, :, t, 1] .>= 0.0) & 
             all(ρˢᵍᵥ[:, :, t, 2] .>= 0.0) &
             all(ρˢᵍᵥ[:, :, t, 1] .<= 1.0) &
@@ -571,26 +470,24 @@ function optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
     
     if ( ( Nᵥ != 0) & (sum(ρˢᵍᵥ[:,:,t,1] .* nᵢᵍ) > Nᵥ) ) 
          
-        # The idea is to 
+        # Define a matrix that gives you the priority of each patch and age group...
         priority_ϵ =  nᵢᵍ .* ( reshape(repeat(ϵᵍ, M), (G,M) ) )
         priority_ϵ = priority_ϵ / (sum(priority_ϵ) == 0 ? 1 : sum(priority_ϵ) )
+        # ... and use the priority matrix to define how many dosis each subgroup get
         ϵᵢᵍ = Nᵥ * priority_ϵ
         
         # Define index that tells you if and where there are more susceptibles than vaccines
         idx_ϵ = ρˢᵍᵥ[:,:,t,1] .* nᵢᵍ .- ϵᵢᵍ
-        
-        # If there is one location and age group that has more vaccines than susceptibles the number of vaccines in
-        # that compartment is set equal to the number of susceptibles
-#         ϵᵢᵍ = ϵᵢᵍ .* (idx_ϵ .> 0)
-#         ϵᵢᵍ.* (idx_ϵ .<= 0) .= ρˢᵍᵥ[:,:,t,1] .* nᵢᵍ .* (idx_ϵ .<= 0)
 
-        # Redistribution of vaccines (work in progress)
+        # Redistribution of vaccines: If there is one location and age group that has more vaccines than susceptibles the number 
+        # of vaccines in that compartment is set equal to the number of susceptibles and the spare dosis are restributed among the others
         while ( !prod(idx_ϵ .>= 0 ) )   
+            ϵᵢᵍ = ϵᵢᵍ .* (idx_ϵ .> 0)
             ϵᵢᵍ .* (idx_ϵ .<= 0) .= ρˢᵍᵥ[:,:,t,1] .* nᵢᵍ .* (idx_ϵ .<= 0)
             Nᵥ_new = Nᵥ - sum(nᵢᵍ .* (idx_ϵ .<= 0) )
             
-            ϵᵢᵍ = ϵᵢᵍ .* (idx_ϵ .> 0)
-            priority_ϵ =  nᵢᵍ .* ϵᵢᵍ
+            # Redifine priority levels
+            priority_ϵ =  nᵢᵍ .* ϵᵢᵍ 
             priority_ϵ = priority_ϵ / (sum(priority_ϵ) == 0 ? 1 : sum(priority_ϵ) )
             ϵᵢᵍ .* (idx_ϵ .> 0) .= Nᵥ_new * priority_ϵ
             
@@ -617,12 +514,13 @@ end
                                  κ₀::Float64 = 0.0,
                                  ϕ::Float64 = 1.0,
                                  δ::Float64 = 0.0,
+                                 ϵᵍ::Array{Float64, 1} = [0., 0., 0.],
                                  t₀::Int64 = 1,
                                  verbose::Bool = false)
 
 Computes the evolution of the epidemic spreading over time, updating the
 variables stored in epi_params. It also provides, through optional arguments,
-the application of a containmnet on a specific date.
+the application of a containmnet or a vaccination campaign on a specific date.
 
 # Arguments
 
@@ -638,6 +536,7 @@ the application of a containmnet on a specific date.
 - `κ⁰::Float64 = 0.0`: Mobility reduction.
 - `ϕ::Float64 = 1.0`: Permeability of confined households.
 - `δ::Float64 = 0.0`: Social Distancing.
+- `ϵᵍ::Array{Float64, 1} = [0., 0., 0.]`: Number of vaccines for each age group
 - `t₀::Int64 = 1`: Initial timestep.
 - `verbose::Bool = false`: If `true`, prints useful information about the
   evolution of the epidemic process.
@@ -660,8 +559,6 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
     Pᵢᵍᵥ = zeros(Float64, G, M, V)
 
     # Auxiliar arrays to compute P (avoid the allocation of additional memory)
-    # Pᵢᴬᵍ = zeros(Float64, G, M)
-    # Pᵢᴵᵍ = zeros(Float64, G, M)
     Sᵢᵍᵥ = zeros(Float64, G, M, V)
     
     
@@ -676,13 +573,14 @@ end
                                  tᶜs::Array{Int64, 1},
                                  κ₀s::Array{Float64, 1},
                                  ϕs::Array{Float64, 1},
-                                 δs::Array{Float64, 1};
+                                 δs::Array{Float64, 1},
+                                 ϵᵍs::Array{Float64, 2};
                                  t₀::Int64 = 1,
                                  verbose::Bool = false)
 
 Computes the evolution of the epidemic spreading over time, updating the
 variables stored in epi_params. It provides the option of the application
-of multiple different containmnets at specific dates.
+of multiple different containmnets or vaccination campaigns at specific dates.
 
 # Arguments
 
@@ -694,6 +592,7 @@ of multiple different containmnets at specific dates.
 - `κ⁰s::Array{Float64, 1}`: List of mobility reductions.
 - `ϕs::Array{Float64, 1}`: List of permeabilities of confined households.
 - `δs::Array{Float64, 1}`: List of social distancings.
+- `ϵᵍs::Array{Float64, 2}`: List of dosis per age group of each time period
 
 ## Optional
 
@@ -740,8 +639,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
             i += 1
         end
         
-        ######### AGGIUNTA PER EVITARE COMPARTIMENTI NEGATIVI ##########
-        
+        # To avoid negative compartments
         only_positive = all(epi_params.ρˢᵍᵥ[:, :, t, 1] .>= 0.0) & 
             all(epi_params.ρˢᵍᵥ[:, :, t, 2] .>= 0.0) &
             all(epi_params.ρˢᵍᵥ[:, :, t, 1] .<= 1.0) &
@@ -751,8 +649,6 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
             @printf("ATTENZIONE: I suscettibili sono meno di 0 o più di 1")
             return
         end
-            
-        ########## FINE AGGIUNTA #################
 
         if verbose
             print_status(epi_params, population, t + 1)
