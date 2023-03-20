@@ -1,0 +1,11 @@
+[
+	{"name": "P", "type": "constant", "args": {"value": 1}},
+	{"name": "beta", "type": "uniform", "args": {"loc": 0.06, "scale": 0.03}},
+	{"name": "scale_beta", "type": "uniform", "args": {"loc": 0.45, "scale": 0.05}},
+	{"name": "t_inc", "type": "uniform", "args": {"loc": 4.2, "scale": 0.2}},
+	{"name": "scale_ea", "type": "uniform", "args": {"loc": 0.5, "scale": 0.15}},
+	{"name": "t_i", "type": "uniform", "args": {"loc": 1, "scale": 5}},
+	{"name": "delta", "type": "uniform", "args": {"loc": 0, "scale": 0.5}},
+	{"name": "phi", "type": "uniform", "args": {"loc": 0, "scale": 0.2}},
+	{"name": "scale_s", "type": "uniform", "args": {"loc": 0.45, "scale": 0.1}}
+]

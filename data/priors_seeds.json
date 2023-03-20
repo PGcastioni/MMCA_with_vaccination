@@ -1,0 +1,21 @@
+[
+    {"name": 2309, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "4109101", "patch_name": "Andaluc\u00eda"},
+    {"name": 2825, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "5029702", "patch_name": "Arag\u00f3n"},
+    {"name": 1929, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "3304411", "patch_name": "Principado de Asturias"},
+    {"name": 314, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "0704002", "patch_name": "Illes Balears"},
+    {"name": 2141, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "3803802", "patch_name": "Canarias"},
+    {"name": 2193, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "3907502", "patch_name": "Cantabria"},
+    {"name": 2678, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "4718601", "patch_name": "Castilla y Le\u00f3n"},
+    {"name": 2493, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "4516801_AD", "patch_name": "Castilla-La Mancha"},
+    {"name": 360, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "0801902", "patch_name": "Catalu\u00f1a"},
+    {"name": 2628, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "4625001", "patch_name": "Comunitat Valenciana"},
+    {"name": 630, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "1003703", "patch_name": "Extremadura"},
+    {"name": 947, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "1507805", "patch_name": "Galicia"},
+    {"name": 1573, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "2807901", "patch_name": "Comunidad de Madrid"},
+    {"name": 1767, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "3003002", "patch_name": "Regi\u00f3n de Murcia"},
+    {"name": 1821, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "3120101", "patch_name": "Comunidad Foral de Navarra"},
+    {"name": 10, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "0105901", "patch_name": "Pa\u00eds Vasco"},
+    {"name": 1455, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "2608903", "patch_name": "La Rioja"},
+    {"name": 2838, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "5100101", "patch_name": "Ceuta"},
+    {"name": 2845, "type": "uniform", "args": {"loc": 0, "scale": 100}, "patch_id": "5200102", "patch_name": "Melilla"}
+]
