@@ -357,6 +357,17 @@ function set_compartments!(epi_params, compartments)
     epi_params.ρᴴᴰᵍ[:,:,1] .= compartments[:, :, 8] ./ total_population
     epi_params.ρᴰᵍ[:,:,1] .= compartments[:, :, 9] ./ total_population
     epi_params.ρᴿᵍ[:,:,1] .= compartments[:, :, 10] ./ total_population
+
+    epi_params.ρˢᵍ[isnan.(epi_params.ρˢᵍ)] .= 0
+    epi_params.ρᴱᵍ[isnan.(epi_params.ρᴱᵍ)] .= 0
+    epi_params.ρᴬᵍ[isnan.(epi_params.ρᴬᵍ)] .= 0
+    epi_params.ρᴵᵍ[isnan.(epi_params.ρᴵᵍ)] .= 0
+    epi_params.ρᴾᴴᵍ[isnan.(epi_params.ρᴾᴴᵍ)] .= 0
+    epi_params.ρᴾᴰᵍ[isnan.(epi_params.ρᴾᴰᵍ)] .= 0
+    epi_params.ρᴴᴿᵍ[isnan.(epi_params.ρᴴᴿᵍ)] .= 0
+    epi_params.ρᴴᴰᵍ[isnan.(epi_params.ρᴴᴰᵍ)] .= 0
+    epi_params.ρᴰᵍ[isnan.(epi_params.ρᴰᵍ)] .= 0
+    epi_params.ρᴿᵍ[isnan.(epi_params.ρᴿᵍ)] .= 0
 end
 
 
