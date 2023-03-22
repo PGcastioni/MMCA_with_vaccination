@@ -15,5 +15,12 @@
 		        "skip_first_day_simulation": true
         	}
         }
-	}
+	},
+        "simulation": {
+                "first_day_simulation": "2020-02-09",
+                "last_day_simulation": "2020-10-16",
+                "export_compartments_time_t": null,
+                "export_compartments_full": true
+        }
+
 }
