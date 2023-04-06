@@ -1,3 +1,7 @@
 # MMCA_with_vaccination
 Further development of the Microscopic Markov Chain Approach to epidemics. More specifically this code is the extension of the MMCAcovid19.jl code, created exactly to deal with COVID19.
 Each of the previous compartment has being doubled to account for the fact that there are vaccinated and unvaccinated individuals. Having received the vaccine changes some of the transition probabilities related with the most negative aspects of the disease, such as transmission, hospitalization and death.
+
+The file markov_vac.jl contains all the function needed to numerically solve the difference equation of the model, while the markov_vac_aux.jl contains additional functions related to the definition of structures of data, initial condition, print functions etc.
+
+Also a list Jupyter notebooks is present. The file Working_model.ipynb shows how to initialize the parameters and how to run simulations, together with a example of a plot with multiple scenarios with different vaccination strategies. In Scenarios.ipynb we run different scenarios of the vaccination processes, compare them against the baseline simulation with no vaccination and plot the results. In Pareto.ipynb we run a big number of simulations that will then just be plotted in a scatter plot to identify the Pareto front. In Calibration_model.ipynb we show how the model is calibrated using the Turing package of Julia.
