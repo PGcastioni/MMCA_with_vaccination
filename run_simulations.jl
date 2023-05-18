@@ -7,7 +7,7 @@ using DataStructures
 using Base.Threads
 using ProgressMeter
 using NPZ
-using MMCAcovid19
+# using MMCAcovid19
 using ArgParse
 using JSON
 using Dates
@@ -52,6 +52,9 @@ function parse_commandline()
     return parse_args(s)
 end
 
+
+include("MMCAcovid19_vac/markov_vac_aux.jl")
+include("MMCAcovid19_vac/markov_vac.jl")
 
 args = parse_commandline()
 data_path = args["data-folder"]
@@ -181,6 +184,9 @@ M = length(nᵢ)
 # Num of stratas
 G = size(C)[1]
 
+# Num. of vaccination statuses Vaccinated/Non-vaccinated
+V = 2
+
 # Average number of contacts per strata
 kᵍ = [11.8, 13.3, 6.76]
 
@@ -200,49 +206,58 @@ pᵍ = [0.0, 1.0, 0.00]
 σ = 2.5
 
 # Check network structure and self-loop correction
-edgelist, Rᵢⱼ = MMCAcovid19.correct_self_loops(edgelist, Rᵢⱼ, M)
+edgelist, Rᵢⱼ = correct_self_loops(edgelist, Rᵢⱼ, M)
 
 
 ## EPIDEMIC PARAMETERS
 
 # Scaling of the asymptomatic infectivity
 scale_β = 0.51
-
 # Infectivity of Symptomatic
 βᴵ = 0.0903
-
 # Infectivity of Asymptomatic
 βᴬ = scale_β * βᴵ
-
 # Exposed rate
 ηᵍ = [1/3.64, 1/3.64, 1/3.64]
-
 # Asymptomatic rate
 αᵍ = [1/3.76, 1/1.56, 1/1.56]
-
 # Infectious rate
 μᵍ = [1/1.0, 1/3.2, 1/3.2]
 
-# Direct death probability
-θᵍ = [0.00, 0.008, 0.047]
+
+############################################
+# CHANGE CODE TO RUN WITH VACCINATION MODEL
+############################################
 
 # Direct death probability
-γᵍ = [0.0003, 0.003, 0.026]
+# θᵍ = [0.00, 0.008, 0.047]
+θᵍ = [0.     0.0*(1-0.95);
+      0.0  0.0*(1-0.95); 
+      0.0  0.0*(1-0.95)]
+
+# Direct death probability
+# γᵍ = [0.0003, 0.003, 0.026]
+γᵍ = [0.003  0.003*(1-0.9);
+      0.01   0.01*(1-0.9); 
+      0.08   0.08*(1-0.9)] 
+
+# Fatality probability in ICU
+# ωᵍ = [0.30, 0.30, 0.30]
+ωᵍ = [0.  0.0*(1-0.95); 
+      0.04  0.04*(1-0.95); 
+      0.3  0.3*(1-0.95)]
+
+############################################
 
 # Pre-deceased rate
 ζᵍ = [1/7.8, 1/7.8, 1/7.8]
-
 # Pre-hospitalized in ICU rate
 λᵍ = ones(Float64, 3)
-
-# Fatality probability in ICU
-ωᵍ = [0.30, 0.30, 0.30]
-
 # Death rate in ICU
 ψᵍ = [1/7.0, 1/7.0, 1/7.0]
-
 # ICU discharge rate
 χᵍ = [1/21.0, 1/21.0, 1/21.0]
+
 
 # Number of timesteps
 # dia inicial: 9 Feb
@@ -251,45 +266,81 @@ scale_β = 0.51
 # T = 66
 T = (last_day - first_day).value + 1
 
-# Epidemic parameters
-# epi_params = Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, G, M, T)
 
-## CONFINEMENT MEASURES
+############################################
+# CHANGE CODE TO RUN WITH VACCINATION MODEL
+############################################
+
+# Epidemic parameters
+# Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+
+
+Λ = 1 / 50 # Waning immunity rate 
+Γ = 1 / 100 # Reinfection rate
+rᵥ = [0., 0.6 ] # Relative risk reduction of the probability of infection
+kᵥ = [0., 0.4 ] # Relative risk reduction of the probability of transmission
+
+# We will need to define tᵛs for the vaccination times
+# in order to have times for confinementmeasures (tᶜs) and 
+# vaccinations (tᵛs) --> also update run_epidemic_spreading_mmca!
+# so it accept both parameters (PG now howto)
+
+total_population = sum(nᵢ)
+percentage_of_vacc_per_day = 0.05
+# total vaccinations per age strata
+ϵᵍ = [0.1 , 0.4 , 0.5] * round( total_population * percentage_of_vacc_per_day )
+
+start_vacc = 10
+dur_vacc   = 20
+end_vacc   = start_vacc + dur_vacc
+tᶜs = [start_vacc, end_vacc, T] # rename to tᵛs
+ϵᵍs = ϵᵍ .* [0 1 0] # reshape(ϵᵍ, (3, 1))
 
 # syncronize containment measures with simulation
 κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
-
 # Timesteps when the containment measures will be applied
-tᶜs = κ₀_df.time[:]
+# tᶜs = κ₀_df.time[:]
 
 # Array of level of confinement
-κ₀s = κ₀_df.reduction[:]
-
+# κ₀s = κ₀_df.reduction[:]
+κ₀s = zeros(length(tᶜs))
 # Array of premeabilities of confined households
 ϕs = ones(Float64, length(tᶜs))
-
 # Array of social distancing measures
-δs = ones(Float64, length(tᶜs))
-
+#δs = ones(Float64, length(tᶜs))
+δs = zeros(Float64, length(tᶜs))
+############################################
 
 ## INITIALIZATION OF THE EPIDEMICS
 
 # Initial number of exposed individuals
 E₀ = zeros(G, M)
-
 # Initial number of infectious asymptomatic individuals
 A₀ = zeros(Float64, G, M)
 
+println("Total population = ", total_population)
 # Distribution of the intial infected individuals per strata
-# WARN: ni idea de por que es necesario el .+ 1 aqui (las semillas ya vienen indexadas partiendo de 1) pero si no lo pongo la simulacion simplemente no funciona
+# WARN: ni idea de por que es necesario el .+ 1 aqui (las semillas ya vienen indexadas partiendo de 1) 
+# pero si no lo pongo la simulacion simplemente no funciona
+"""
 A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
 A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
 A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
+"""
+#A₀ = A₀ / total_population
 
 # Initial number of infectious symptomatic individuals
 I₀ = zeros(Float64, G, M)
 
 
+E₀ = nᵢᵍ / total_population * 1000
+A₀ = nᵢᵍ / total_population * 1000
+I₀ = nᵢᵍ / total_population * 1000
+H₀ = nᵢᵍ * 0
+# R₀ = population.nᵢᵍ / total_population * 23e5 ### NUMERO REALISTICO?
+R₀ = nᵢᵍ * 0
+#S₁ = (population.nᵢᵍ .- E₀ .- A₀ .- I₀ .- H₀ .- R₀) .* 0.5
+S₁ = nᵢᵍ * 0
 
 ## -----------------------------------------------------------------------------
 ## SETTING UP SIMULATION VARIABLES
@@ -335,7 +386,7 @@ epi_params = CircularDeque{Epidemic_Params}(nThreads)
 # Populate the circular deque
 for t in 1:nThreads
     push!(populations, Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ))
-    push!(epi_params, Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, G, M, T))
+    push!(epi_params, Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V))
 end
 
 
@@ -412,19 +463,22 @@ function run_simu_params!(epi_params::Epidemic_Params,
 
     # Reset compartments
     reset_params!(epi_params, population)
-
+    """
     if initial_compartments != nothing
         set_compartments!(epi_params, initial_compartments)
     else
         set_initial_infected!(epi_params, population, E₀, scale₀ .* A₀, I₀)
     end
+    """
+    set_initial_conditions!(epi_params, population, S₁, E₀, A₀, I₀, H₀, R₀)
+
 
     # Set containment parameters
     ϕs .= ϕ
     δs .= δ
 
     ## RUN EPIDEMIC SPREADING
-    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, κ₀s, ϕs, δs, verbose=false)
+    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, κ₀s, ϕs, δs, ϵᵍs; verbose=false)
 
     # Compute the prevalence
     prevalence[:, :, indx_id] = PatchToCCAA * sum((epi_params.ρᴵᵍ[:, :, 1:epi_params.T] .+
