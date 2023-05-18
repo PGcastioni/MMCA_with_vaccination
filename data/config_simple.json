@@ -1,0 +1,26 @@
+{
+	"data": {
+		"parameters_columns": ["P", "beta", "scale_beta", "t_inc", "scale_ea", "t_i", "delta", "phi", "scale_s"],
+        "A0_filename": "A0_initial_conditions.csv",
+        "kappa0_filename": "kappa0_from_mitma.csv",
+        "fit_alternatives": {
+        	"deaths": {
+        		"real_data_filename": "ccaa_covid19_fallecidos_long_Marc.csv",
+        		"sim_data_pattern": "deaths_new_*.npy",
+        		"skip_first_day_simulation": true
+        	},
+        	"incidence": {
+        		"real_data_filename": "ccaa_covid19_incidencia.csv",
+		        "sim_data_pattern": "incidence_*.npy",
+		        "skip_first_day_simulation": true
+        	}
+        }
+	},
+        "simulation": {
+                "first_day_simulation": "2020-02-09",
+                "last_day_simulation": "2020-10-16",
+                "export_compartments_time_t": null,
+                "export_compartments_full": true
+        }
+
+}
