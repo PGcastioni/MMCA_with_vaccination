@@ -18,9 +18,9 @@
 	},
 	"simulation": {
 		"first_day_simulation": "2020-02-09",
-		"last_day_simulation": "2020-02-16",
+		"last_day_simulation": "2020-09-15",
 		"export_compartments_time_t": null,
-		"export_compartments_full": false,
-		"initial_compartments": "/home/javier/bsc/emews-mmca-covid19/data/initial_compartments_2020-02-09.h5" 
+		"export_compartments_full": true,
+		"initial_compartments": null
 	}
 }
