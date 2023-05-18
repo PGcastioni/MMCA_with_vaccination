@@ -87,7 +87,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
     # Get P and compute Q
     compute_P!(Pᵢᵍᵥ, Sᵢᵍᵥ, pᵍ_eff, ρˢᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ,
                epi_params.Qᵢᵍ, population.nᵢᵍ_eff, population.mobilityᵍ,
-               population.normᵍ, epi_params.βᴬᵥ[1], epi_params.βᴵᵥ[1],
+               population.normᵍ, epi_params.βᴬ[1], epi_params.βᴵ[1],
                edgelist, Rᵢⱼ, C, M, G, V, t, rᵥ, kᵥ)
                 
     
@@ -200,8 +200,8 @@ end
                nᵢᵍ_eff::Array{Float64, 2},
                mobilityᵍ::Array{Float64, 2},
                normᵍ::Array{Float64, 2},
-               βᴬᵥ::Float64,
-               βᴵᵥ::Float64,
+               βᴬ::Float64,
+               βᴵ::Float64,
                edgelist::Array{Int64, 2},
                Rᵢⱼ::Array{Float64, 1},
                C::Array{Float64, 2},
@@ -225,8 +225,8 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
                     nᵢᵍ_eff::Array{Float64, 2},
                     mobilityᵍ::Array{Float64, 2},
                     normᵍ::Array{Float64, 2},
-                    βᴬᵥ::Float64,
-                    βᴵᵥ::Float64,
+                    βᴬ::Float64,
+                    βᴵ::Float64,
                     edgelist::Array{Int64, 2},
                     Rᵢⱼ::Array{Float64, 1},
                     C::Array{Float64, 2},
@@ -267,10 +267,10 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
         for v in 1:V
             @simd for g in 1:G
                 Pᵢᵍᵥ[g, i, v] = 1 - 
-                    (1 - βᴬᵥ*(1 - rᵥ[v])*(1 - kᵥ[1]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, 1]) *
-                    (1 - βᴬᵥ*(1 - rᵥ[v])*(1 - kᵥ[2]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, 2]) *
-                    (1 - βᴵᵥ*(1 - rᵥ[v])*(1 - kᵥ[1]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, 1]) *
-                    (1 - βᴵᵥ*(1 - rᵥ[v])*(1 - kᵥ[2]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, 2])
+                    (1 - βᴬ*(1 - rᵥ[v])*(1 - kᵥ[1]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, 1]) *
+                    (1 - βᴬ*(1 - rᵥ[v])*(1 - kᵥ[2]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, 2]) *
+                    (1 - βᴵ*(1 - rᵥ[v])*(1 - kᵥ[1]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, 1]) *
+                    (1 - βᴵ*(1 - rᵥ[v])*(1 - kᵥ[2]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, 2])
             end
         end
     end

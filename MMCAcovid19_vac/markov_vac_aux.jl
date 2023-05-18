@@ -15,8 +15,8 @@ All the parameters contained in this structure are probabilities ranged between
 
 # Epidemic parameters
 
-- `βᴵᵥ::Array{Float64, 1}`: Infectivity of infected.
-- `βᴬᵥ::Array{Float64, 1}`: Infectivity of asymptomatic.
+- `βᴵ::Array{Float64, 1}`: Infectivity of infected.
+- `βᴬ::Array{Float64, 1}`: Infectivity of asymptomatic.
 - `ηᵍ::Array{Float64, 1}`: Exposed rate for each strata.
 - `αᵍ::Array{Float64, 1}`: Asymptomatic infectious rate for each strata.
 - `μᵍ::Array{Float64, 1}`: Infectious rate for each strata.
@@ -77,8 +77,8 @@ All the parameters contained in this structure are probabilities ranged between
 """
 struct Epidemic_Params
     #Epidemic parameters
-    βᴵᵥ::Array{Float64, 1}
-    βᴬᵥ::Array{Float64, 1}
+    βᴵ::Array{Float64, 1}
+    βᴬ::Array{Float64, 1}
     ηᵍ::Array{Float64, 1}
     αᵍ::Array{Float64, 1}
     μᵍ::Array{Float64, 1}
@@ -118,8 +118,8 @@ end
 
 
 """
-    Epidemic_Params(βᴵᵥ::Float64,
-                    βᴬᵥ::Float64,
+    Epidemic_Params(βᴵ::Float64,
+                    βᴬ::Float64,
                     ηᵍ::Array{Float64, 1},
                     αᵍ::Array{Float64, 1},
                     μᵍ::Array{Float64, 1},
@@ -141,8 +141,8 @@ end
 
 # Arguments
 
-- `βᴵᵥ::Float64`: Infectivity of infected for each vaccination status.
-- `βᴬᵥ::Float64`: Infectivity of asymptomatic for each vaccination status.
+- `βᴵ::Float64`: Infectivity of infected for each vaccination status.
+- `βᴬ::Float64`: Infectivity of asymptomatic for each vaccination status.
 - `ηᵍ::Array{Float64, 1}`: Vector of size ``G`` with exposed rates for each
   strata.
 - `αᵍ::Array{Float64, 1}`: Vector of size ``G`` with asymptomatic infectious
@@ -177,8 +177,8 @@ end
 Struct that contains the parameters related with the epidemic parameters and
 compartmental evolution.
 """
-function Epidemic_Params(βᴵᵥ::Float64,
-                         βᴬᵥ::Float64,
+function Epidemic_Params(βᴵ::Float64,
+                         βᴬ::Float64,
                          ηᵍ::Array{Float64, 1},
                          αᵍ::Array{Float64, 1},
                          μᵍ::Array{Float64, 1},
@@ -212,7 +212,7 @@ function Epidemic_Params(βᴵᵥ::Float64,
     CHᵢᵍ = zeros(Float64, G, M)
     Qᵢᵍ  = zeros(Float64, G, M, T)
     
-    return Epidemic_Params([βᴵᵥ], [βᴬᵥ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
+    return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
                            copy(θᵍ), copy(γᵍ), copy(ζᵍ), copy(λᵍ), copy(ωᵍ),
                            copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), T, V, copy(rᵥ), copy(kᵥ), 
                            ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ,
@@ -685,8 +685,8 @@ function compute_R_eff(epi_params::Epidemic_Params,
     T = epi_params.T - 1 # because we have to cut out the case t=1
     V = epi_params.V
     
-    βᴬᵥ = epi_params.βᴬᵥ[1]
-    βᴵᵥ = epi_params.βᴵᵥ[1]
+    βᴬ = epi_params.βᴬ[1]
+    βᴵ = epi_params.βᴵ[1]
 
     ηᵍ = epi_params.ηᵍ
     αᵍ = epi_params.αᵍ
@@ -727,7 +727,7 @@ function compute_R_eff(epi_params::Epidemic_Params,
 #                 # the +2 instead of +1 is because time t corresponds to the time t+1 in the epi_params
 #             end
             @simd for g in 1:G
-                @. Rᵢᵍᵥ[g, :, t, v] = epi_params.Qᵢᵍ[g, :, t] * (1 - kᵥ[v]) * (βᴬᵥ/αᵍ[g] + βᴵᵥ/μᵍ[g] )
+                @. Rᵢᵍᵥ[g, :, t, v] = epi_params.Qᵢᵍ[g, :, t] * (1 - kᵥ[v]) * (βᴬ/αᵍ[g] + βᴵ/μᵍ[g] )
             end
         end
 
