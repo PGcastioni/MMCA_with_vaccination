@@ -598,15 +598,18 @@ function set_initial_conditions!(epi_params::Epidemic_Params,
     @. epi_params.ρᴵᵍᵥ[:, :, t₀, 1] = I₀ / population.nᵢᵍ 
     
     # Initial hospitalized population
-    @. epi_params.ρᴴᴿᵍᵥ[:, :, t₀, 1] = H₀ / population.nᵢᵍ 
+    @. epi_params.ρᴾᴴᵍᵥ[:, :, t₀, 1] = H₀ / population.nᵢᵍ 
     
     # Initial recovered population
     @. epi_params.ρᴿᵍᵥ[:, :, t₀, 1] = R₀ / population.nᵢᵍ
 
     # Control over division by zero
+    epi_params.ρˢᵍᵥ[isnan.(epi_params.ρˢᵍᵥ)] .= 0
     epi_params.ρᴱᵍᵥ[isnan.(epi_params.ρᴱᵍᵥ)] .= 0
     epi_params.ρᴬᵍᵥ[isnan.(epi_params.ρᴬᵍᵥ)] .= 0
     epi_params.ρᴵᵍᵥ[isnan.(epi_params.ρᴵᵍᵥ)] .= 0
+    epi_params.ρᴾᴴᵍᵥ[isnan.(epi_params.ρᴾᴴᵍᵥ)] .= 0
+    epi_params.ρᴿᵍᵥ[isnan.(epi_params.ρᴿᵍᵥ)] .= 0
 
     # Update the fraction of suceptible individual
     @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = 1 - (epi_params.ρˢᵍᵥ[:, :, t₀, 2] +

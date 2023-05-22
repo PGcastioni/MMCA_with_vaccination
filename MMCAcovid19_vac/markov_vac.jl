@@ -106,11 +106,18 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
         end
     end
     
+    
     # Compute vaccine priority distribution among ages and patches
     ϵᵢᵍ = optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
                                            ρˢᵍᵥ::Array{Float64, 4},
                                            nᵢᵍ::Array{Float64, 2},
                                            t::Int64)
+                    
+    # Newly vaccinated people as a fraction of the subpopulation
+    new_vaccinated = zeros(Float64, G, M)
+    new_vaccinated .= ϵᵢᵍ ./ nᵢᵍ
+    new_vaccinated[isnan.(new_vaccinated)] .= 0.
+    
 
     # Update probabilities
     @inbounds for i in 1:M
@@ -136,12 +143,13 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             end        
         
             @simd for v in 1:V
-
+                
+                # Infection probability
                 Πᵢᵍᵥ = (1 - pᵍ_eff[g]) * Pᵢᵍᵥ[g, i, v] + pᵍ_eff[g] * τᵢᵍᵥ[g, i, v]
 
                 # Epidemic compartments, where all states of vaccination are present
                 ρˢᵍᵥ[g, i, t + 1, v] = ( 1 - Πᵢᵍᵥ ) * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] +
-                    ϵᵢᵍ[g, i] * ( v == 1 ? -1 : 1 ) / nᵢᵍ[g, i] +
+                    new_vaccinated[g, i] * ( v == 1 ? -1 : 1 ) +
                     Λ * ( v == 1 ? 1 : -1 ) * ρˢᵍᵥ[g, i, t, 2] +
                     Γ * ( v == 2 ? 1 : 0 ) * ρᴿᵍᵥ[g, i, t, 1]
                 
@@ -646,7 +654,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
             all(epi_params.ρˢᵍᵥ[:, :, t, 2] .<= 1.0)
         
         if !only_positive
-            @printf("ATTENZIONE: I suscettibili sono meno di 0 o più di 1")
+            @printf("ATTENZIONE: I suscettibili sono meno di 0 o più di 1\n")
             return
         end
 
