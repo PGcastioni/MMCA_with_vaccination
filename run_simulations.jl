@@ -1,3 +1,4 @@
+
 using DelimitedFiles
 # using Statistics
 using DataFrames
@@ -13,6 +14,9 @@ using JSON
 using Dates
 using ArgParse
 using HDF5
+
+include("MMCAcovid19_vac/markov_vac_aux.jl")
+include("MMCAcovid19_vac/markov_vac.jl")
 
 
 function parse_commandline()
@@ -52,13 +56,10 @@ function parse_commandline()
     return parse_args(s)
 end
 
-
-include("MMCAcovid19_vac/markov_vac_aux.jl")
-include("MMCAcovid19_vac/markov_vac.jl")
-
 args = parse_commandline()
 data_path = args["data-folder"]
 instance_path = args["instance-folder"]
+
 
 # Config file
 config = JSON.parsefile(args["config"])
@@ -107,6 +108,7 @@ println("export_compartments_full = ", export_compartments_full)
 println("export_compartments_time_t = ", export_compartments_time_t)
 println("initial_compartments = ", initial_compartments_path)
 
+
 ## -----------------------------------------------------------------------------
 ## LOADING DATA
 ## -----------------------------------------------------------------------------
@@ -118,6 +120,13 @@ if args["params"] != nothing
 else
     paramsDF = CSV.read(joinpath(instance_path, "params.csv"), DataFrame)
 end
+
+
+# ## First substitution
+# instance_path = "C:\\Users\\pierg\\Documents\\Dottorato\\crexdata\\MMCA_with_vaccination\\data"
+# data_path = "C:\\Users\\pierg\\Documents\\Dottorato\\crexdata\\MMCA_with_vaccination\\data"
+# initial_compartments_path = nothing
+# paramsDF = CSV.read(joinpath(instance_path, "params.csv"), DataFrame)
 
 # Output simulation
 output_path = joinpath(instance_path, "output")
@@ -143,6 +152,7 @@ else
     # use seeds to initialize simulations
     initial_compartments = nothing
 end
+"""
 A0_instance_filename = @sprintf("%s/%s", instance_path, config["data"]["A0_filename"])
 A0_data_filename = @sprintf("%s/%s", data_path, config["data"]["A0_filename"])
 if isfile(A0_instance_filename)
@@ -152,13 +162,13 @@ else
   println("Loading A0 from data/ folder")
   conditions₀ = CSV.read(A0_data_filename, DataFrame)
 end
-
+"""
 C = readdlm(@sprintf("%s/C_age_contact_matrix.csv", data_path),
             ',', Float64)
-
+"""
 # Containement measures
 κ₀_df = CSV.read(@sprintf("%s/%s", data_path, config["data"]["kappa0_filename"]), DataFrame)
-
+"""
 # Patch to CCAA mapping matrix
 PatchToCCAA = npzread(@sprintf("%s/patch_to_ccaa.npy", data_path))
 n_ccaa = size(PatchToCCAA)[1]
@@ -264,8 +274,10 @@ scale_β = 0.51
 # dia final: 14 Abril (66 dias)
 # T = 123
 # T = 66
+"""
 T = (last_day - first_day).value + 1
-
+"""
+T = 4
 
 ############################################
 # CHANGE CODE TO RUN WITH VACCINATION MODEL
@@ -290,14 +302,16 @@ percentage_of_vacc_per_day = 0.05
 # total vaccinations per age strata
 ϵᵍ = [0.1 , 0.4 , 0.5] * round( total_population * percentage_of_vacc_per_day )
 
-start_vacc = 10
-dur_vacc   = 20
+start_vacc = 2
+dur_vacc   = 3
 end_vacc   = start_vacc + dur_vacc
 tᶜs = [start_vacc, end_vacc, T] # rename to tᵛs
 ϵᵍs = ϵᵍ .* [0 1 0] # reshape(ϵᵍ, (3, 1))
 
 # syncronize containment measures with simulation
+"""
 κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
+"""
 # Timesteps when the containment measures will be applied
 # tᶜs = κ₀_df.time[:]
 
@@ -362,13 +376,13 @@ prevalence = zeros(Float64, n_ccaa, T, total_simulations)
 deaths = zeros(Float64, n_ccaa, T, total_simulations)
 deaths_new = zeros(Float64, n_ccaa, T - 1, total_simulations)
 
+
 if export_compartments
   num_compartments = 10
   compartments = zeros(Float64, G, M, T, num_compartments, total_simulations)
 else
   compartments = nothing
 end
-
 
 ## SETTING UP THE THREADING VARIABLES
 
@@ -394,6 +408,8 @@ end
 ## FUNCTIONS
 ## -----------------------------------------------------------------------------
 
+"""
+### PIER: what is this function for? ###
 
 function set_compartments!(epi_params, compartments)
     @assert size(compartments) == (size(epi_params.ρˢᵍ)[1], size(epi_params.ρˢᵍ)[2], 10)
@@ -420,7 +436,7 @@ function set_compartments!(epi_params, compartments)
     epi_params.ρᴰᵍ[isnan.(epi_params.ρᴰᵍ)] .= 0
     epi_params.ρᴿᵍ[isnan.(epi_params.ρᴿᵍ)] .= 0
 end
-
+"""
 
 """
     run_simu_params!(epi_params::Epidemic_Params,
@@ -441,8 +457,12 @@ function run_simu_params!(epi_params::Epidemic_Params,
                           population::Population_Params,
                           paramsDF::DataFrame,
                           indx_id::Int64,
+                          E₀::Array{Float64, 2},
                           A₀::Array{Float64, 2},
                           I₀::Array{Float64, 2},
+                          H₀::Array{Float64, 2},
+                          R₀::Array{Float64, 2},
+                          S₁::Array{Float64, 2},
                           incidence::Array{Float64, 3},
                           prevalence::Array{Float64, 3},
                           deaths_new::Array{Float64, 3},
@@ -472,49 +492,51 @@ function run_simu_params!(epi_params::Epidemic_Params,
     """
     set_initial_conditions!(epi_params, population, S₁, E₀, A₀, I₀, H₀, R₀)
 
-
+"""
     # Set containment parameters
     ϕs .= ϕ
     δs .= δ
-
+"""
+    
     ## RUN EPIDEMIC SPREADING
-    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, κ₀s, ϕs, δs, ϵᵍs; verbose=false)
+    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
 
     # Compute the prevalence
-    prevalence[:, :, indx_id] = PatchToCCAA * sum((epi_params.ρᴵᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴴᴰᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴴᴿᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴾᴴᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴾᴰᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴰᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴿᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴬᵍ[:, :, 1:epi_params.T] .+
-                                   epi_params.ρᴱᵍ[:, :, 1:epi_params.T]) .*
-                                  population.nᵢᵍ, dims = (1))[1,:,:]  # sum by CCAA
+    prevalence[:, :, indx_id] = PatchToCCAA * sum( (epi_params.ρᴱᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴬᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴵᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴾᴴᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴾᴰᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴴᴰᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴴᴿᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴿᵍᵥ[:, :, 1:epi_params.T, :] .+
+                    epi_params.ρᴰᵍᵥ[:, :, 1:epi_params.T, :] ) .* 
+                 population.nᵢᵍ[:, :], dims = (1, 4) )[1,:,:,1]
 
     # Compute the incidence
-    incidence[:, :, indx_id]  = diff(prevalence[:, :, indx_id], dims=2)
+    incidence[:, :, indx_id]  = diff(prevalence[:, :, indx_id], dims=(2))
 
     # Compute total number of deaths
-    deaths[:, :, indx_id] = PatchToCCAA * sum(epi_params.ρᴰᵍ[:, :, 1:epi_params.T] .*
-                                          population.nᵢᵍ, dims = (1))[1,:,:]  # sum by CCAA
+    deaths[:, :, indx_id] = PatchToCCAA * sum(epi_params.ρᴰᵍᵥ[:, :, 1:epi_params.T, :] .*
+                                          population.nᵢᵍ, dims = (1, 4))[1,:,:,1]  # sum by CCAA
 
     # Compute daily new deaths
-    deaths_new[:, :, indx_id] = diff(deaths[:, :, indx_id], dims=2)
-
+    deaths_new[:, :, indx_id] = diff(deaths[:, :, indx_id], dims=(2))
+    
     # Store compartments to later export (can't write to disk here, hdf5 is not thread safe)
     if export_compartments
-      compartments[:, :, :, 1, indx_id] = epi_params.ρˢᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 2, indx_id] = epi_params.ρᴱᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 3, indx_id] = epi_params.ρᴬᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 4, indx_id] = epi_params.ρᴵᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 5, indx_id] = epi_params.ρᴾᴴᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 6, indx_id] = epi_params.ρᴾᴰᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 7, indx_id] = epi_params.ρᴴᴿᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 8, indx_id] = epi_params.ρᴴᴰᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 9, indx_id] = epi_params.ρᴰᵍ .* population.nᵢᵍ
-      compartments[:, :, :, 10, indx_id] = epi_params.ρᴿᵍ .* population.nᵢᵍ
+      compartments[:, :, :, 1, indx_id] .= sum( epi_params.ρˢᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 2, indx_id] .= sum( epi_params.ρᴱᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 3, indx_id] .= sum( epi_params.ρᴬᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 4, indx_id] .= sum( epi_params.ρᴵᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 5, indx_id] .= sum( epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 6, indx_id] .= sum( epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 7, indx_id] .= sum( epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 8, indx_id] .= sum( epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 9, indx_id] .= sum( epi_params.ρᴰᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+      compartments[:, :, :, 10, indx_id] .= sum( epi_params.ρᴿᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
     end
+    
 end
 
 
@@ -548,8 +570,12 @@ lockS = SpinLock()
                      population,
                      paramsDF,
                      indx_id,
+                     E₀,
                      A₀,
                      I₀,
+                     H₀,
+                     R₀,
+                     S₁,
                      incidence,
                      prevalence,
                      deaths_new,
@@ -619,8 +645,9 @@ if export_compartments
         end
     end
 end
-
+"""
 # store configuration
 open(joinpath(output_path, "config.json"), "w") do f
     JSON.print(f, config, 4)
 end
+"""
