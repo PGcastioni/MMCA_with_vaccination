@@ -50,7 +50,10 @@
 		"kᵥ": [0.0, 0.4]
 	},
 	"vaccination":{
-
+		"ϵᵍ": [0.1 , 0.4 , 0.5],
+		"start_vacc": 2,
+		"dur_vacc": 3,
+		"are_there_vaccines": true
 	},
 	"NPI":{
 		
