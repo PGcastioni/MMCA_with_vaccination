@@ -9,7 +9,8 @@
                  δ::Float64,
                  ϵᵍ::Array{Float64, 1},
                  t::Int64,
-                 tᶜ::Int64)
+                 tᶜ::Int64,
+                 tᵛ::Int64)
 
 Updates the probabilities of the model using the equations described in the
 paper.
@@ -139,12 +140,12 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
         
         # Update compartmental probabilities
         for g in 1:G
-            if tᶜ == t
-                ρˢᵍᵥ[g, i, t, 1] += CHᵢᵍᵥ[g, i, 1]
-                ρˢᵍᵥ[g, i, t, 2] += CHᵢᵍᵥ[g, i, 2]
-            end        
-        
+                  
             @simd for v in 1:V
+                
+                if tᶜ == t
+                    ρˢᵍᵥ[g, i, t, v] += CHᵢᵍᵥ[g, i, v]
+                end  
                 
                 # Infection probability
                 Πᵢᵍᵥ = (1 - pᵍ_eff[g]) * Pᵢᵍᵥ[g, i, v] + pᵍ_eff[g] * τᵢᵍᵥ[g, i, v]
@@ -522,6 +523,7 @@ end
     run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                  population::Population_Params;
                                  tᶜ::Int64 = -1,
+                                 tᵛ::Int64 = -1,
                                  κ₀::Float64 = 0.0,
                                  ϕ::Float64 = 1.0,
                                  δ::Float64 = 0.0,
@@ -544,6 +546,7 @@ the application of a containmnet or a vaccination campaign on a specific date.
 
 - `tᶜ::Int64 = -1`: Timestep of application of containment, or out of timesteps range
   value for no containment.
+- `tᵛ::Int64 = -1`: Timestep of application of vaccination.
 - `κ⁰::Float64 = 0.0`: Mobility reduction.
 - `ϕ::Float64 = 1.0`: Permeability of confined households.
 - `δ::Float64 = 0.0`: Social Distancing.
@@ -555,6 +558,7 @@ the application of a containmnet or a vaccination campaign on a specific date.
 function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                       population::Population_Params;
                                       tᶜ::Int64 = -1,
+                                      tᵛ::Int64 = -1,
                                       κ₀::Float64 = 0.0,
                                       ϕ::Float64 = 1.0,
                                       δ::Float64 = 0.0,
@@ -573,7 +577,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
     Sᵢᵍᵥ = zeros(Float64, G, M, V)
     
     
-    run_epidemic_spreading_mmca!(epi_params, population, [tᶜ],
+    run_epidemic_spreading_mmca!(epi_params, population, [tᶜ], [tᵛ],
                                  [κ₀], [ϕ], [δ], reshape(ϵᵍ, (3,1)) , t₀ = t₀, verbose = verbose)
 end
 
@@ -582,6 +586,7 @@ end
     run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                  population::Population_Params,
                                  tᶜs::Array{Int64, 1},
+                                 tᵛs::Array{Int64, 1},
                                  κ₀s::Array{Float64, 1},
                                  ϕs::Array{Float64, 1},
                                  δs::Array{Float64, 1},
@@ -600,6 +605,7 @@ of multiple different containmnets or vaccination campaigns at specific dates.
 - `population::Population_Params`: Structure that contains all the parameters
   related with the population.
 - `tᶜs::Array{Int64, 1}`: List of timesteps of application of containments.
+- `tᵛs::Int64 = -1`: Timestep of application of vaccination.
 - `κ⁰s::Array{Float64, 1}`: List of mobility reductions.
 - `ϕs::Array{Float64, 1}`: List of permeabilities of confined households.
 - `δs::Array{Float64, 1}`: List of social distancings.
@@ -614,6 +620,7 @@ of multiple different containmnets or vaccination campaigns at specific dates.
 function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                       population::Population_Params,
                                       tᶜs::Array{Int64, 1},
+                                      tᵛs::Array{Int64, 1},
                                       κ₀s::Array{Float64, 1},
                                       ϕs::Array{Float64, 1},
                                       δs::Array{Float64, 1},
@@ -637,17 +644,22 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
         print_status(epi_params, population, t₀)
     end
 
-    i = 1
+    i = 1 # counter for containment
+    j = 1 # counter for vaccination
 
     ## Start loop for time evoluiton
     @inbounds for t in t₀:(T - 1)
 
         
         update_prob!(Pᵢᵍᵥ, Sᵢᵍᵥ, τᵢᵍᵥ, epi_params, population,
-                        κ₀s[i], ϕs[i], δs[i], ϵᵍs[:, i], t, tᶜs[i])
+                        κ₀s[i], ϕs[i], δs[i], ϵᵍs[:, j], t, tᶜs[i], tᵛs[j])
         
         if t == tᶜs[i] && i < length(tᶜs)
             i += 1
+        end
+
+        if t == tᵛs[j] && j < length(tᵛs)
+            j += 1
         end
         
         # To avoid negative compartments
