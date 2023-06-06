@@ -69,7 +69,7 @@ All the parameters contained in this structure are probabilities ranged between
 
 # Auxiliary
 
-- `CHᵢᵍ::Array{Float64, 2}`: Fraction of securely confined individuals for each
+- `CHᵢᵍᵥ::Array{Float64, 3}`: Fraction of securely confined individuals for each
   strata and patch.
 - `Qᵢᵍ::Array{Float64, 3}`: Suceptible contacts available for each strata on a
   given patch.
@@ -110,7 +110,7 @@ struct Epidemic_Params
     ρᴴᴰᵍᵥ::Array{Float64, 4}
     ρᴰᵍᵥ::Array{Float64, 4}
     ρᴿᵍᵥ::Array{Float64, 4}
-    CHᵢᵍ::Array{Float64, 2}
+    CHᵢᵍᵥ::Array{Float64, 3}
     
     # R_t related arrays
     Qᵢᵍ::Array{Float64, 3}
@@ -209,14 +209,14 @@ function Epidemic_Params(βᴵ::Float64,
     ρᴴᴰᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴰᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴿᵍᵥ  = zeros(Float64, G, M, T, V)
-    CHᵢᵍ = zeros(Float64, G, M)
+    CHᵢᵍᵥ = zeros(Float64, G, M, V)
     Qᵢᵍ  = zeros(Float64, G, M, T)
     
     return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
                            copy(θᵍ), copy(γᵍ), copy(ζᵍ), copy(λᵍ), copy(ωᵍ),
                            copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), T, V, copy(rᵥ), copy(kᵥ), 
                            ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ,
-                           ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, ρᴿᵍᵥ, CHᵢᵍ, Qᵢᵍ)
+                           ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, ρᴿᵍᵥ, CHᵢᵍᵥ, Qᵢᵍ)
 end
 
 
@@ -239,7 +239,7 @@ function reset_epidemic_params!(epi_params::Epidemic_Params)
     epi_params.ρᴴᴰᵍᵥ .= 0.
     epi_params.ρᴰᵍᵥ .= 0.
     epi_params.ρᴿᵍᵥ .= 0.
-    epi_params.CHᵢᵍ .= 0.
+    epi_params.CHᵢᵍᵥ .= 0.
 
     # Rt structures
     epi_params.Qᵢᵍ .= 0.
@@ -544,7 +544,7 @@ end
 """
     set_initial_conditions!(epi_params::Epidemic_Params,
                                population::Population_Params,
-                               S₁::Array{Float64, 2},
+                               Sᵛ₀::Array{Float64, 2},
                                E₀::Array{Float64, 2},
                                A₀::Array{Float64, 2},
                                I₀::Array{Float64, 2},
@@ -552,7 +552,7 @@ end
                                R₀::Array{Float64, 2})
 
 Set the initial number of individuals on a population. They can be
-introduced as susceptible vaccinated (S₁), exposed unvaccinated (E₀), asymptomatic 
+introduced as susceptible vaccinated (Sᵛ₀), exposed unvaccinated (E₀), asymptomatic 
 unvaccinated (A₀), symptomatic unvaccinated (I₀), hospitalized unvaccinated (H₀) or recovered 
 unvaccinated (R₀) individuals.
 
@@ -561,7 +561,7 @@ unvaccinated (R₀) individuals.
   and the epidemic spreading information.
 - `population::Population_Params`: Structure that contains all the parameters
   related with the population.
-- `S₁::Array{Float64, 2}`: Matrix of size ``G \\times M`` containing the number
+- `Sᵛ₀::Array{Float64, 2}`: Matrix of size ``G \\times M`` containing the number
   of vaccinated susceptible individuals of each strata on each patch.
 - `E₀::Array{Float64, 2}`: Matrix of size ``G \\times M`` containing the number
   of unvaccinated exposed individuals of each strata on each patch.
@@ -576,7 +576,7 @@ unvaccinated (R₀) individuals.
 """
 function set_initial_conditions!(epi_params::Epidemic_Params,
                                population::Population_Params,
-                               S₁::Array{Float64, 2},
+                               Sᵛ₀::Array{Float64, 2},
                                E₀::Array{Float64, 2},
                                A₀::Array{Float64, 2},
                                I₀::Array{Float64, 2},
@@ -586,7 +586,7 @@ function set_initial_conditions!(epi_params::Epidemic_Params,
     t₀ = 1
     
     # Initial susceptible population
-    @. epi_params.ρˢᵍᵥ[:, :, t₀, 2] = S₁ / population.nᵢᵍ
+    @. epi_params.ρˢᵍᵥ[:, :, t₀, 2] = Sᵛ₀ / population.nᵢᵍ
 
     # Initial exposed population
     @. epi_params.ρᴱᵍᵥ[:, :, t₀, 1] = E₀ / population.nᵢᵍ 

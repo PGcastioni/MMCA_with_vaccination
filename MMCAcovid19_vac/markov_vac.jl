@@ -24,7 +24,8 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                       δ::Float64,
                       ϵᵍ::Array{Float64, 1},
                       t::Int64,
-                      tᶜ::Int64)
+                      tᶜ::Int64, 
+                      tᵛ::Int64)
 
     # Shortcuts to parameters
     ηᵍ = epi_params.ηᵍ
@@ -54,7 +55,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
     ρᴰᵍᵥ = epi_params.ρᴰᵍᵥ
     ρᴿᵍᵥ = epi_params.ρᴿᵍᵥ
     
-    CHᵢᵍ = epi_params.CHᵢᵍ
+    CHᵢᵍᵥ = epi_params.CHᵢᵍᵥ
     G = population.G
     M = population.M
     Nᵍ = population.Nᵍ
@@ -139,7 +140,8 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
         # Update compartmental probabilities
         for g in 1:G
             if tᶜ == t
-                ρˢᵍᵥ[g, i, t, 1] += CHᵢᵍ[g, i]
+                ρˢᵍᵥ[g, i, t, 1] += CHᵢᵍᵥ[g, i, 1]
+                ρˢᵍᵥ[g, i, t, 2] += CHᵢᵍᵥ[g, i, 2]
             end        
         
             @simd for v in 1:V
@@ -180,17 +182,18 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
 
                 ρᴰᵍᵥ[g, i, t + 1, v] = ρᴰᵍᵥ[g, i, t, v] + ζᵍ[g] * ρᴾᴰᵍᵥ[g, i, t, v] +
                     ψᵍ[g] * ρᴴᴰᵍᵥ[g, i, t, v]
-            end
+                
+                ### Pier: I moved inside the loop all the things that were outside before
+                # Reset values
+                    τᵢᵍᵥ[g, i, :] .= 0.
+                    Pᵢᵍᵥ[g, i, :] .= 0.
 
-            if tᶜ == t
-                aux = ρˢᵍᵥ[g, i, t, 1] + ρˢᵍᵥ[g, i, t, 2]
-                ρˢᵍᵥ[g, i, t, 1] -= CHᵢᵍ[g, i] 
-                CHᵢᵍ[g, i] = CHᵢ * aux
+                if tᶜ == t
+                    aux = ρˢᵍᵥ[g, i, t, v]
+                    ρˢᵍᵥ[g, i, t, v] -= CHᵢᵍᵥ[g, i, v] 
+                    CHᵢᵍᵥ[g, i, v] = CHᵢ * aux
+                end 
             end            
-    
-            # Reset values
-            τᵢᵍᵥ[g, i, :] .= 0.
-            Pᵢᵍᵥ[g, i, :] .= 0.
         end
     end
     
@@ -322,8 +325,8 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴰᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, :] .+
-                    epi_params.ρᴰᵍᵥ[:, :, t, :] ) .* population.nᵢᵍ[:, :]) +
-               sum(epi_params.CHᵢᵍ[:, :] .* population.nᵢᵍ[:, :]) 
+                    epi_params.ρᴰᵍᵥ[:, :, t, :] .+
+                    epi_params.CHᵢᵍᵥ[:, :, :] ) .* population.nᵢᵍ[:, :])
 
     infected = sum(epi_params.ρᴵᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :] .+
                    epi_params.ρᴬᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :])
