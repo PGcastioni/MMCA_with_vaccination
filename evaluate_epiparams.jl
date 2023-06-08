@@ -1,6 +1,6 @@
 
 using DelimitedFiles
-# using Statistics
+using Statistics
 using DataFrames
 using CSV
 using Printf
@@ -44,13 +44,30 @@ function create_default_epiparameters()
     epiparams_dict["Γ"] = 0.01
     epiparams_dict["rᵥ"] = [0.0, 0.6]
     epiparams_dict["kᵥ"] = [0.0, 0.4]
-    epiparams_dict["ϵᵍ"] = [0.1 , 0.4 , 0.5]
-    epiparams_dict["start_vacc"] = 2
-    epiparams_dict["dur_vacc"] = 3
-    epiparams_dict["are_there_vaccines"] = true
+    epiparams_dict["age_labels"] = ["Y", "M", "O"]
 
     return epiparams_dict
+end
 
+function create_default_vacparameters()
+    vacparams_dict = Dict()
+    vacparams_dict["ϵᵍ"] = [0.1 , 0.4 , 0.5]
+    vacparams_dict["percentage_of_vacc_per_day"] = 0.005
+    vacparams_dict["start_vacc"] = 2
+    vacparams_dict["dur_vacc"] = 8
+    vacparams_dict["are_there_vaccines"] = false
+
+    return vacparams_dict
+end
+
+function create_default_npiparameters()
+    npiparams_dict = Dict()
+    npiparams_dict["κ₀s"]: [0.0]
+    npiparams_dict["ϕs"]: [1.0]
+    npiparams_dict["δs"]: [0.0]
+    npiparams_dict["tᶜs"]: [5]
+
+    return npiparams_dict
 end
 
 
@@ -102,10 +119,25 @@ if !haskey(config, "simulation")
     config["simulation"] = Dict()
 end
 
+# Define dictionary containing epidemic parameters
 if !haskey(config, "model")
-    config["model"] = create_default_epiparameters()
+    epiparams_dict = create_default_epiparameters()
 else
     epiparams_dict = config["model"]
+end
+
+# Define dictionary containing vaccination parameters
+if !haskey(config, "vaccination")
+    vacparams_dict = create_default_vacparameters()
+else
+    vacparams_dict = config["vaccination"]
+end
+
+# Define dictionary containing npi parameters
+if !haskey(config, "NPI")
+    npiparams_dict = create_default_npiparameters()
+else
+    npiparams_dict = config["NPI"]
 end
 
 # overwrite config with command line
@@ -218,7 +250,7 @@ n_patches = size(PatchToCCAA)[2]
 
 # Patch population for each strata
 # REVIEW: check whether we can move the age labels into config json 
-nᵢᵍ = copy(transpose(Array{Float64,2}(nᵢ_ages[:,config["age_labels"]])))
+nᵢᵍ = copy(transpose(Array{Float64,2}(nᵢ_ages[:,epiparams_dict["age_labels"]])))
 
 # Total patch population
 nᵢ = Array{Float64,1}(nᵢ_ages[:,"Total"])
@@ -230,7 +262,7 @@ M = length(nᵢ)
 G = size(C)[1]
 
 # Num. of vaccination statuses Vaccinated/Non-vaccinated
-V = length(config["model"]["kᵥ"])
+V = length(epiparams_dict["kᵥ"])
 
 # Average number of contacts per strata
 kᵍ = Float64.(epiparams_dict["kᵍ"])
@@ -300,7 +332,7 @@ scale_β = epiparams_dict["scale_β"]
 """
 T = (last_day - first_day).value + 1
 """
-T = 4
+T = 10
 
 ############################################
 # CHANGE CODE TO RUN WITH VACCINATION MODEL
@@ -315,15 +347,7 @@ T = 4
 rᵥ = Float64.(epiparams_dict["rᵥ"]) # Relative risk reduction of the probability of infection
 kᵥ = Float64.(epiparams_dict["kᵥ"])# Relative risk reduction of the probability of transmission
 
-# We will need to define tᵛs for the vaccination times
-# in order to have times for confinementmeasures (tᶜs) and 
-# vaccinations (tᵛs) --> also update run_epidemic_spreading_mmca!
-# so it accept both parameters (PG now howto)
-
 total_population = sum(nᵢ)
-
-# Dictionary with the vaccination parameters
-vacparams_dict = config["vaccination"]
 
 # total vaccinations per age strata
 ϵᵍ = vacparams_dict["ϵᵍ"] * round( total_population * vacparams_dict["percentage_of_vacc_per_day"] )
@@ -331,24 +355,25 @@ vacparams_dict = config["vaccination"]
 start_vacc = vacparams_dict["start_vacc"]
 dur_vacc   = vacparams_dict["dur_vacc"]
 end_vacc   = start_vacc + dur_vacc
-tᶜs = [start_vacc, end_vacc, T] # rename to tᵛs
+tᵛs = [start_vacc, end_vacc, T]
 ϵᵍs = ϵᵍ .* [0  Int(vacparams_dict["are_there_vaccines"])  0] 
 
+### CONFINEMENT
 # syncronize containment measures with simulation
 """
 κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
 """
 # Timesteps when the containment measures will be applied
 # tᶜs = κ₀_df.time[:]
+tᶜs = Int64.(npiparams_dict["tᶜs"])
 
 # Array of level of confinement
 # κ₀s = κ₀_df.reduction[:]
-κ₀s = zeros(length(tᶜs))
+κ₀s = Float64.(npiparams_dict["κ₀s"])
 # Array of premeabilities of confined households
-ϕs = ones(Float64, length(tᶜs))
+ϕs = Float64.(npiparams_dict["ϕs"])
 # Array of social distancing measures
-#δs = ones(Float64, length(tᶜs))
-δs = zeros(Float64, length(tᶜs))
+δs = Float64.(npiparams_dict["δs"])
 ############################################
 
 ## INITIALIZATION OF THE EPIDEMICS
@@ -511,10 +536,8 @@ function run_simu_params!(epi_params::Epidemic_Params,
     if initial_compartments != nothing
         set_compartments!(epi_params, initial_compartments)
     else
-        set_initial_infected!(epi_params, population, E₀, scale₀ .* A₀, I₀)
+        set_initial_conditions!(epi_params, population, S₁, E₀, A₀, I₀, H₀, R₀)
     end
-    
-    # set_initial_conditions!(epi_params, population, S₁, E₀, A₀, I₀, H₀, R₀)
 
 """
     # Set containment parameters
@@ -523,7 +546,7 @@ function run_simu_params!(epi_params::Epidemic_Params,
 """
     
     ## RUN EPIDEMIC SPREADING
-    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
+    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
 
     # Compute the prevalence
     prevalence[:, :, indx_id] = PatchToCCAA * sum( (epi_params.ρᴱᵍᵥ[:, :, 1:epi_params.T, :] .+
@@ -548,7 +571,6 @@ function run_simu_params!(epi_params::Epidemic_Params,
     deaths_new[:, :, indx_id] = diff(deaths[:, :, indx_id], dims=(2))
     
     # Store compartments to later export (can't write to disk here, hdf5 is not thread safe)
-    # PIER: here 
     if export_compartments
         compartments[:, :, :, :, 1, indx_id] .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
         compartments[:, :, :, :, 2, indx_id] .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ

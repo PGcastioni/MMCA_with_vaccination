@@ -55,11 +55,14 @@
 		"ϵᵍ": [0.1 , 0.4 , 0.5],
 		"percentage_of_vacc_per_day": 0.005,
 		"start_vacc": 2,
-		"dur_vacc": 3,
-		"are_there_vaccines": true
+		"dur_vacc": 8,
+		"are_there_vaccines": false
 	},
 	"NPI":{
-		
+		"κ₀s": [0.5],
+		"ϕs": [0.6],
+		"δs": [0.5],
+		"tᶜs": [5]
 	}
 }
 
