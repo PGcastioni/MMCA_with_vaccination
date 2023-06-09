@@ -65,7 +65,7 @@ function create_default_npiparameters()
     npiparams_dict["κ₀s"]: [0.0]
     npiparams_dict["ϕs"]: [1.0]
     npiparams_dict["δs"]: [0.0]
-    npiparams_dict["tᶜs"]: [5]
+    npiparams_dict["tᶜs"]: [1]
 
     return npiparams_dict
 end
