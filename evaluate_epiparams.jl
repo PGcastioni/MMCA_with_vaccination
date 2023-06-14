@@ -62,6 +62,8 @@ end
 
 function create_default_npiparameters()
     npiparams_dict = Dict()
+    ## It's important that the default parameters are those of the absence of 
+    ## lockdowns, because they are the one the code refers to if the key "are_there_npi" = false
     npiparams_dict["κ₀s"]: [0.0]
     npiparams_dict["ϕs"]: [1.0]
     npiparams_dict["δs"]: [0.0]
@@ -134,7 +136,7 @@ else
 end
 
 # Define dictionary containing npi parameters
-if !haskey(config, "NPI")
+if (!haskey(config, "NPI") | !config["NPI"]["are_there_npi"] )
     npiparams_dict = create_default_npiparameters()
 else
     npiparams_dict = config["NPI"]
