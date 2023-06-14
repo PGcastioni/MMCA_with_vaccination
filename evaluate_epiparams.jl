@@ -404,8 +404,8 @@ I₀ = nᵢᵍ / total_population * 1000
 H₀ = nᵢᵍ * 0
 # R₀ = population.nᵢᵍ / total_population * 23e5
 R₀ = nᵢᵍ * 0
-#S₁ = (population.nᵢᵍ .- E₀ .- A₀ .- I₀ .- H₀ .- R₀) .* 0.5
-S₁ = nᵢᵍ * 0
+#Sᵛ₀ = (population.nᵢᵍ .- E₀ .- A₀ .- I₀ .- H₀ .- R₀) .* 0.5
+Sᵛ₀ = nᵢᵍ * 0
 
 ## -----------------------------------------------------------------------------
 ## SETTING UP SIMULATION VARIABLES
@@ -511,7 +511,7 @@ function run_simu_params!(epi_params::Epidemic_Params,
                           I₀::Array{Float64, 2},
                           H₀::Array{Float64, 2},
                           R₀::Array{Float64, 2},
-                          S₁::Array{Float64, 2},
+                          Sᵛ₀::Array{Float64, 2},
                           incidence::Array{Float64, 3},
                           prevalence::Array{Float64, 3},
                           deaths_new::Array{Float64, 3},
@@ -536,7 +536,7 @@ function run_simu_params!(epi_params::Epidemic_Params,
     if initial_compartments != nothing
         set_compartments!(epi_params, initial_compartments)
     else
-        set_initial_conditions!(epi_params, population, S₁, E₀, A₀, I₀, H₀, R₀)
+        set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
     end
 
 """
@@ -623,7 +623,7 @@ lockS = SpinLock()
                      I₀,
                      H₀,
                      R₀,
-                     S₁,
+                     Sᵛ₀,
                      incidence,
                      prevalence,
                      deaths_new,
