@@ -220,7 +220,8 @@ else
     # use seeds to initialize simulations
     initial_compartments = nothing
 end
-"""
+
+#descomentado
 A0_instance_filename = @sprintf("%s/%s", instance_path, config["data"]["A0_filename"])
 A0_data_filename = @sprintf("%s/%s", data_path, config["data"]["A0_filename"])
 if isfile(A0_instance_filename)
@@ -230,13 +231,13 @@ else
   println("Loading A0 from data/ folder")
   conditions₀ = CSV.read(A0_data_filename, DataFrame)
 end
-"""
+
 C = readdlm(@sprintf("%s/C_age_contact_matrix.csv", data_path),
             ',', Float64)
-"""
+
 # Containement measures
 κ₀_df = CSV.read(@sprintf("%s/%s", data_path, config["data"]["kappa0_filename"]), DataFrame)
-"""
+
 # Patch to CCAA mapping matrix
 PatchToCCAA = npzread(@sprintf("%s/patch_to_ccaa.npy", data_path))
 n_ccaa = size(PatchToCCAA)[1]
@@ -259,12 +260,15 @@ nᵢ = Array{Float64,1}(nᵢ_ages[:,"Total"])
 
 # Num. of patches
 M = length(nᵢ)
+println("M = ", M)
 
 # Num of stratas
 G = size(C)[1]
+println("G = ", G)
 
 # Num. of vaccination statuses Vaccinated/Non-vaccinated
 V = length(epiparams_dict["kᵥ"])
+println("V = ", V)
 
 # Average number of contacts per strata
 kᵍ = Float64.(epiparams_dict["kᵍ"])
@@ -331,10 +335,11 @@ scale_β = epiparams_dict["scale_β"]
 # dia final: 14 Abril (66 dias)
 # T = 123
 # T = 66
-"""
+
 T = (last_day - first_day).value + 1
-"""
-T = 10
+println("T = ", T)
+
+#T = 10
 
 ############################################
 # CHANGE CODE TO RUN WITH VACCINATION MODEL
@@ -362,9 +367,10 @@ tᵛs = [start_vacc, end_vacc, T]
 
 ### CONFINEMENT
 # syncronize containment measures with simulation
-"""
+
+#descomentado
 κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
-"""
+
 # Timesteps when the containment measures will be applied
 # tᶜs = κ₀_df.time[:]
 tᶜs = Int64.(npiparams_dict["tᶜs"])
@@ -389,11 +395,12 @@ println("Total population = ", total_population)
 # Distribution of the intial infected individuals per strata
 # WARN: ni idea de por que es necesario el .+ 1 aqui (las semillas ya vienen indexadas partiendo de 1) 
 # pero si no lo pongo la simulacion simplemente no funciona
-"""
+
+#descomentado
 A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
 A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
 A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
-"""
+
 #A₀ = A₀ / total_population
 
 # Initial number of infectious symptomatic individuals
@@ -415,6 +422,7 @@ Sᵛ₀ = nᵢᵍ * 0
 
 # Num. of set of epidemic parameters
 total_simulations = length(paramsDF.id)
+println("total_simulations : ", total_simulations)
 # total_simulations = 3
 
 println("Allocating output matrices (size = n_ccaa x T x total_simulations)")
@@ -432,11 +440,12 @@ deaths_new = zeros(Float64, n_ccaa, T - 1, total_simulations)
 
 if export_compartments
   num_compartments = 10
+  println("num_compartments : ", num_compartments)
   compartments = zeros(Float64, G, M, T, V, num_compartments, total_simulations)
 else
   compartments = nothing
 end
-
+println("typeof : ",size(compartments))
 ## SETTING UP THE THREADING VARIABLES
 
 # Number of threads used to parallelize the execution
@@ -462,19 +471,23 @@ end
 ## -----------------------------------------------------------------------------
 
 
-function set_compartments!(epi_params, compartments)
-    @assert size(compartments) == (size(epi_params.ρˢᵍᵥ)[1], size(epi_params.ρˢᵍᵥ)[2], size(epi_params.ρˢᵍᵥ)[4], 10)
-    total_population = sum(compartments, dims=(3))[:,:,1]
-    epi_params.ρˢᵍᵥ[:,:,1,:] .= compartments[:, :, :, 1] ./ total_population
-    epi_params.ρᴱᵍᵥ[:,:,1,:] .= compartments[:, :, :, 2] ./ total_population
-    epi_params.ρᴬᵍᵥ[:,:,1,:] .= compartments[:, :, :, 3] ./ total_population
-    epi_params.ρᴵᵍᵥ[:,:,1,:] .= compartments[:, :, :, 4] ./ total_population
-    epi_params.ρᴾᴴᵍᵥ[:,:,1,:] .= compartments[:, :, :, 5] ./ total_population
-    epi_params.ρᴾᴰᵍᵥ[:,:,1,:] .= compartments[:, :, :, 6] ./ total_population
-    epi_params.ρᴴᴿᵍᵥ[:,:,1,:] .= compartments[:, :, :, 7] ./ total_population
-    epi_params.ρᴴᴰᵍᵥ[:,:,1,:] .= compartments[:, :, :, 8] ./ total_population
-    epi_params.ρᴰᵍᵥ[:,:,1,:] .= compartments[:, :, :, 9] ./ total_population
-    epi_params.ρᴿᵍᵥ[:,:,1,:] .= compartments[:, :, :, 10] ./ total_population
+function set_compartments!(epi_params, initial_compartments)
+    @assert size(initial_compartments) == (size(epi_params.ρˢᵍᵥ)[1], size(epi_params.ρˢᵍᵥ)[2], size(epi_params.ρˢᵍᵥ)[4], 10)
+    total_population = sum(initial_compartments, dims=(3))[:,:,1]
+    
+    # Index of the initial condition
+    T0 = 1
+    
+    epi_params.ρˢᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 1] ./ total_population
+    epi_params.ρᴱᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 2] ./ total_population
+    epi_params.ρᴬᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 3] ./ total_population
+    epi_params.ρᴵᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 4] ./ total_population
+    epi_params.ρᴾᴴᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 5] ./ total_population
+    epi_params.ρᴾᴰᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 6] ./ total_population
+    epi_params.ρᴴᴿᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 7] ./ total_population
+    epi_params.ρᴴᴰᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 8] ./ total_population
+    epi_params.ρᴿᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 9] ./ total_population
+    epi_params.ρᴰᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 10] ./ total_population
 
     epi_params.ρˢᵍᵥ[isnan.(epi_params.ρˢᵍᵥ)] .= 0
     epi_params.ρᴱᵍᵥ[isnan.(epi_params.ρᴱᵍᵥ)] .= 0
@@ -484,8 +497,8 @@ function set_compartments!(epi_params, compartments)
     epi_params.ρᴾᴰᵍᵥ[isnan.(epi_params.ρᴾᴰᵍᵥ)] .= 0
     epi_params.ρᴴᴿᵍᵥ[isnan.(epi_params.ρᴴᴿᵍᵥ)] .= 0
     epi_params.ρᴴᴰᵍᵥ[isnan.(epi_params.ρᴴᴰᵍᵥ)] .= 0
-    epi_params.ρᴰᵍᵥ[isnan.(epi_params.ρᴰᵍᵥ)] .= 0
     epi_params.ρᴿᵍᵥ[isnan.(epi_params.ρᴿᵍᵥ)] .= 0
+    epi_params.ρᴰᵍᵥ[isnan.(epi_params.ρᴰᵍᵥ)] .= 0
 end
 
 
@@ -532,20 +545,25 @@ function run_simu_params!(epi_params::Epidemic_Params,
                       1.0/(τ_inc * scale_ea)]
     epi_params.μᵍ .= [1.0, 1.0/τᵢ, 1.0/τᵢ]
 
+    #añadido
+    # Rescaling the initial number of asymptomatic
+    scaled_A₀ = scale₀ .* A₀
+
+    #descomentado
+    # Set containment parameters
+    ϕs .= ϕ
+    δs .= δ
+
     # Reset compartments
     reset_params!(epi_params, population)
     
     if initial_compartments != nothing
         set_compartments!(epi_params, initial_compartments)
     else
-        set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
+        set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, scaled_A₀, I₀, H₀, R₀)
     end
 
-"""
-    # Set containment parameters
-    ϕs .= ϕ
-    δs .= δ
-"""
+
     
     ## RUN EPIDEMIC SPREADING
     run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
@@ -574,16 +592,17 @@ function run_simu_params!(epi_params::Epidemic_Params,
     
     # Store compartments to later export (can't write to disk here, hdf5 is not thread safe)
     if export_compartments
-        compartments[:, :, :, :, 1, indx_id] .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 2, indx_id] .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 3, indx_id] .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 4, indx_id] .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 5, indx_id] .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 6, indx_id] .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 7, indx_id] .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 8, indx_id] .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 9, indx_id] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 10, indx_id] .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 1, indx_id]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 2, indx_id]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 3, indx_id]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 4, indx_id]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 5, indx_id]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 6, indx_id]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 7, indx_id]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 8, indx_id]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 9, indx_id]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 10, indx_id] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
+
     end
     # PIER: if we want to save just the age, location and time infos we have to use
     # compartments[:, :, :, :, 1, indx_id] .= sum( epi_params.ρˢᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
@@ -683,14 +702,14 @@ if export_compartments
             filename = joinpath(output_path, "compartments_$(export_compartments_date)_$id.h5")
             # filename = joinpath(output_path, "compartments_$(export_compartments_date):$(export_compartments_time_t)_$id.h5")
             h5open(filename, "w") do file
-                write(file, "compartments", compartments[:,:,export_compartments_time_t,:,i])
+                write(file, "compartments", compartments[:,:,export_compartments_time_t,:,:,i])
             end
         end
 
         if export_compartments_full
             filename = joinpath(output_path, "compartments_full_$id.h5")
             h5open(filename, "w") do file
-                write(file, "compartments", compartments[:,:,:,:,i])
+                write(file, "compartments", compartments[:,:,:,:,:,i])
             end
         end
     end
