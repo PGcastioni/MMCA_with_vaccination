@@ -64,10 +64,10 @@ function create_default_npiparameters()
     npiparams_dict = Dict()
     ## It's important that the default parameters are those of the absence of 
     ## lockdowns, because they are the one the code refers to if the key "are_there_npi" = false
-    npiparams_dict["κ₀s"]: [0.0]
-    npiparams_dict["ϕs"]: [1.0]
-    npiparams_dict["δs"]: [0.0]
-    npiparams_dict["tᶜs"]: [1]
+    npiparams_dict["κ₀s"] = [0.0]
+    npiparams_dict["ϕs"] = [1.0]
+    npiparams_dict["δs"] = [0.0]
+    npiparams_dict["tᶜs"] =  [1]
 
     return npiparams_dict
 end
