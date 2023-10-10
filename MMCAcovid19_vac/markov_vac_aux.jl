@@ -207,10 +207,10 @@ function Epidemic_Params(βᴵ::Float64,
     ρᴾᴰᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴴᴿᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴴᴰᵍᵥ = zeros(Float64, G, M, T, V)
-    ρᴰᵍᵥ = zeros(Float64, G, M, T, V)
+    ρᴰᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴿᵍᵥ  = zeros(Float64, G, M, T, V)
     CHᵢᵍᵥ = zeros(Float64, G, M, V)
-    Qᵢᵍ  = zeros(Float64, G, M, T)
+    Qᵢᵍ   = zeros(Float64, G, M, T)
     
     return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
                            copy(θᵍ), copy(γᵍ), copy(ζᵍ), copy(λᵍ), copy(ωᵍ),
