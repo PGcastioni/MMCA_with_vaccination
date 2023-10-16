@@ -649,7 +649,7 @@ lockS = SpinLock()
                      prevalence,
                      deaths_new,
                      deaths,
-                     compartments)
+                     initial_compartments)
 
     # Lock the data structure
     lock(lockS)
