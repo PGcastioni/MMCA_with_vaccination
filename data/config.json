@@ -18,7 +18,7 @@
 	},
 	"simulation": {
 		"first_day_simulation": "2020-02-09",
-		"last_day_simulation": "2020-12-15",
+		"last_day_simulation": "2020-03-09",
 		"export_compartments_time_t": null,
 		"export_compartments_full": true,
 		"initial_compartments": null
