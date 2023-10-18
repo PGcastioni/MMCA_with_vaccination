@@ -53,45 +53,38 @@ function set_compartments!(epi_params, initial_compartments)
 end
 
 function run_simu_params!(epi_params::Epidemic_Params,
-    population::Population_Params,
-    E₀::Array{Float64, 2},
-    A₀::Array{Float64, 2},
-    I₀::Array{Float64, 2},
-    H₀::Array{Float64, 2},
-    R₀::Array{Float64, 2},
-    Sᵛ₀::Array{Float64, 2},
-    compartments::Union{Nothing, Array{Float64, 5}})
+                            population::Population_Params,
+                            E₀::Array{Float64, 2},
+                            A₀::Array{Float64, 2},
+                            I₀::Array{Float64, 2},
+                            H₀::Array{Float64, 2},
+                            R₀::Array{Float64, 2},
+                            Sᵛ₀::Array{Float64, 2},
+                            compartments::Union{Nothing, Array{Float64, 5}})
 
 
-# Reset compartments
-reset_params!(epi_params, population)
+    # Reset compartments
+    reset_params!(epi_params, population)
 
-if initial_compartments != nothing
-set_compartments!(epi_params, initial_compartments)
-else
-set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
-end
+    ## RUN EPIDEMIC SPREADING
+    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
 
-
-## RUN EPIDEMIC SPREADING
-run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
-
-# Store compartments to later export (can't write to disk here, hdf5 is not thread safe)
-if export_compartments
-compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
-compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
-end
-# PIER: if we want to save just the age, location and time infos we have to use
-# compartments[:, :, :, :, 1] .= sum( epi_params.ρˢᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
-end
+    # Store compartments to later export (can't write to disk here, hdf5 is not thread safe)
+    if export_compartments
+        compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
+        compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
+    end
+    # PIER: if we want to save just the age, location and time infos we have to use
+    # compartments[:, :, :, :, 1] .= sum( epi_params.ρˢᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
+    end
 
 ###########################################
 ############# FILE READING ################
@@ -121,7 +114,19 @@ last_day = Date(config["simulation"]["last_day_simulation"])
 #T: time steps
 T = (last_day - first_day).value + 1
 
+A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
+A0_instance_filename = joinpath(instance_path, A0_instance_filename)
+
 initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
+initial_compartments_path = joinpath(instance_path, initial_compartments_path)
+
+if A0_instance_filename !== nothing && initial_compartments_path !== nothing
+    println("ERROR!!!")
+end
+
+#########################
+# Simulation output 
+#########################
 export_compartments_full = get(config["simulation"], "export_compartments_full", false)
 export_compartments_time_t = get(config["simulation"], "export_compartments_time_t", nothing)
 
@@ -277,86 +282,80 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 # Array of social distancing measures
 δs = Float64.(npiparams_dict["δs"])
 
-##################################################
-####### INITIALIZATION OF THE EPIDEMICS ##########
-##################################################
-
-# Load initial conditions
-if initial_compartments_path != nothing
-    # use initial compartments matrix to initialize simulations
-    initial_compartments = h5open(initial_compartments_path, "r") do file
-        read(file, "compartments")
-    end
-else
-    # use seeds to initialize simulations
-    initial_compartments = nothing
-end
-
-# Initial seeds (intial condition at the begining of the pandemic)
-A0_instance_filename = joinpath(instance_path, config["simulation"]["A0_filename"])
-conditions₀ = CSV.read(A0_instance_filename, DataFrame)
-
-
-## INITIALIZATION OF THE EPIDEMICS
-
-# Initial number of exposed individuals
-E₀ = zeros(G, M)
-# Initial number of infectious asymptomatic individuals
-A₀ = zeros(Float64, G, M)
-
-println("Total population = ", total_population)
-# Distribution of the intial infected individuals per strata
-# WARN: ni idea de por que es necesario el .+ 1 aqui (las semillas ya vienen indexadas partiendo de 1) 
-# pero si no lo pongo la simulacion simplemente no funciona
-
-#descomentado
-A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
-A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
-A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
-
-#A₀ = A₀ / total_population
-
-# Initial number of infectious symptomatic individuals
-I₀ = zeros(Float64, G, M)
-
-E₀ = nᵢᵍ / total_population * 1000
-A₀ = nᵢᵍ / total_population * 1000
-I₀ = nᵢᵍ / total_population * 1000
-
-H₀ = nᵢᵍ * 0
-# R₀ = population.nᵢᵍ / total_population * 23e5
-R₀ = nᵢᵍ * 0
-#Sᵛ₀ = (population.nᵢᵍ .- E₀ .- A₀ .- I₀ .- H₀ .- R₀) .* 0.5
-Sᵛ₀ = nᵢᵍ * 0
-
-#########################################################
-######### SETTING UP SIMULATION VARIABLES ###############
-#########################################################
-
-# Parameters to simulate
-
-
-compartments = zeros(Float64, G, M, T, V, num_compartments);
-size(compartments)
-
-
-population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
-epi_param = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 
 
 
-# Patch to CCAA mapping matrix
-PatchToCCAA = npzread(joinpath(data_path, fitting_params["patch_to_ccaa_filename"]))
-n_ccaa = size(PatchToCCAA)[1]
-n_patches = size(PatchToCCAA)[2]
+
 
 ########################################################
 ################ RUN THE SIMULATION ####################
 ########################################################
 
-# Run the simulation for all the parameters
+
+
+# structs to store parameters
+population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
+epi_params = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+# array for storing output
+compartments = zeros(Float64, G, M, T, V, num_compartments);
+
+
+##################################################
+####### INITIALIZATION OF THE EPIDEMICS ##########
+##################################################
+
+# Load initial full conditions
+if initial_compartments_path !== nothing
+    # use initial compartments matrix to initialize simulations
+    initial_compartments = h5open(initial_compartments_path, "r") do file
+        read(file, "compartments")
+    end
+    # set the full initial condition o a user defined
+    set_compartments!(epi_params, initial_compartments)
+else if A0_instance_filename !== nothing:
+    # Initial number of infectious asymptomatic individuals
+    # use seeds to initialize simulations
+    conditions₀ = CSV.read(A0_instance_filename, DataFrame)
+
+    A₀ = zeros(Float64, G, M)
+    A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
+    A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
+    A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
+
+    E₀ = zeros(Float64, G, M, V)
+    I₀ = zeros(Float64, G, M, V)
+
+    set_initial_infected!(epi_params, population, E₀, A₀, I₀)
+else
+    # Initial number of infectious symptomatic individuals
+    I₀ = zeros(Float64, G, M, V)
+
+    E₀ = nᵢᵍ / total_population * 1000
+    A₀ = nᵢᵍ / total_population * 1000
+    I₀ = nᵢᵍ / total_population * 1000
+
+    H₀ = nᵢᵍ * 0
+    R₀ = nᵢᵍ * 0
+    Sᵛ₀ = nᵢᵍ * 0
+    set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
+end
+
+# Initial seeds (intial condition at the begining of the pandemic)
+
+
+
+
     
-# Run simu
+else if:
+    # Initial number of exposed individuals
+
+
+    #
+
+
+end
+    
+# Run the simulation
 run_simu_params!(epi_param,
                  population,
                  E₀,
