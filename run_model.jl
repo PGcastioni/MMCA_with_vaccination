@@ -113,7 +113,6 @@ T = (last_day - first_day).value + 1
 
 A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
-println(A0_instance_filename)
 
 initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
 #initial_compartments_path = joinpath(instance_path, initial_compartments_path)
