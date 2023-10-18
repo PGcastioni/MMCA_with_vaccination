@@ -63,9 +63,6 @@ function run_simu_params!(epi_params::Epidemic_Params,
                             compartments::Union{Nothing, Array{Float64, 5}})
 
 
-    # Reset compartments
-    reset_params!(epi_params, population)
-
     ## RUN EPIDEMIC SPREADING
     run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
 
@@ -116,9 +113,10 @@ T = (last_day - first_day).value + 1
 
 A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
+println(A0_instance_filename)
 
 initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
-initial_compartments_path = joinpath(instance_path, initial_compartments_path)
+#initial_compartments_path = joinpath(instance_path, initial_compartments_path)
 
 if A0_instance_filename !== nothing && initial_compartments_path !== nothing
     println("ERROR!!!")
@@ -134,7 +132,7 @@ if export_compartments_time_t !== nothing
     export_compartments_date = first_day + Day(export_compartments_time_t - 1)
 end
 
-if export_compartments_full || export_compartments_time_t != nothing
+if export_compartments_full || export_compartments_time_t !== nothing
     export_compartments = true
 else
     export_compartments = false
@@ -284,9 +282,6 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 
 
 
-
-
-
 ########################################################
 ################ RUN THE SIMULATION ####################
 ########################################################
@@ -295,7 +290,7 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 
 # structs to store parameters
 population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
-epi_params = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+epi_param = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 # array for storing output
 compartments = zeros(Float64, G, M, T, V, num_compartments);
 
@@ -303,6 +298,12 @@ compartments = zeros(Float64, G, M, T, V, num_compartments);
 ##################################################
 ####### INITIALIZATION OF THE EPIDEMICS ##########
 ##################################################
+"""
+se pueden inicializar los compartimentos fuera de la funcion 
+run_simu_params!() porque solo hay una simulacion
+"""
+# Reset compartments
+reset_params!(epi_params, population)
 
 # Load initial full conditions
 if initial_compartments_path !== nothing
@@ -312,48 +313,36 @@ if initial_compartments_path !== nothing
     end
     # set the full initial condition o a user defined
     set_compartments!(epi_params, initial_compartments)
-else if A0_instance_filename !== nothing:
-    # Initial number of infectious asymptomatic individuals
-    # use seeds to initialize simulations
-    conditions₀ = CSV.read(A0_instance_filename, DataFrame)
-
-    A₀ = zeros(Float64, G, M)
-    A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
-    A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
-    A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
-
-    E₀ = zeros(Float64, G, M, V)
-    I₀ = zeros(Float64, G, M, V)
-
-    set_initial_infected!(epi_params, population, E₀, A₀, I₀)
 else
-    # Initial number of infectious symptomatic individuals
-    I₀ = zeros(Float64, G, M, V)
+    Sᵛ₀ = zeros(Float64,G, M)
+    E₀ = zeros(Float64, G, M)
+    A₀ = zeros(Float64, G, M)
+    I₀ = zeros(Float64, G, M)
+    H₀ = zeros(Float64, G, M)
+    R₀ = zeros(Float64, G, M)
 
-    E₀ = nᵢᵍ / total_population * 1000
-    A₀ = nᵢᵍ / total_population * 1000
-    I₀ = nᵢᵍ / total_population * 1000
+    if A0_instance_filename !== nothing
 
-    H₀ = nᵢᵍ * 0
-    R₀ = nᵢᵍ * 0
-    Sᵛ₀ = nᵢᵍ * 0
-    set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
+        # Initial number of infectious asymptomatic individuals
+        # use seeds to initialize simulations
+        conditions₀ = CSV.read(A0_instance_filename, DataFrame)        
+        
+        A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
+        A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
+        A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
+
+        
+    else
+        E₀ = nᵢᵍ / total_population * 1000
+        A₀ = nᵢᵍ / total_population * 1000
+        I₀ = nᵢᵍ / total_population * 1000    
+    end
+    set_initial_conditions!(epi_param, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
 end
 
 # Initial seeds (intial condition at the begining of the pandemic)
 
 
-
-
-    
-else if:
-    # Initial number of exposed individuals
-
-
-    #
-
-
-end
     
 # Run the simulation
 run_simu_params!(epi_param,
