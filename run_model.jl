@@ -125,7 +125,7 @@ initial_compartments_path = get(config["simulation"], "initial_compartments", no
 export_compartments_full = get(config["simulation"], "export_compartments_full", false)
 export_compartments_time_t = get(config["simulation"], "export_compartments_time_t", nothing)
 
-if export_compartments_time_t != nothing
+if export_compartments_time_t !== nothing
     export_compartments_date = first_day + Day(export_compartments_time_t - 1)
 end
 
