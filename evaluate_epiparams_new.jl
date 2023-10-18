@@ -141,7 +141,19 @@ last_day = Date(config["simulation"]["last_day_simulation"])
 
 T = (last_day - first_day).value + 1
 
+A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
+A0_instance_filename = joinpath(instance_path, A0_instance_filename)
+
 initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
+
+if A0_instance_filename !== nothing && initial_compartments_path !== nothing
+    println("ERROR!!!")
+end
+
+################################################
+# simulation output
+################################################
+
 export_compartments_full = get(config["simulation"], "export_compartments_full", false)
 export_compartments_time_t = get(config["simulation"], "export_compartments_time_t", nothing)
 
@@ -311,41 +323,38 @@ else
 end
 
 # Initial seeds (intial condition at the begining of the pandemic)
-A0_instance_filename = joinpath(instance_path, config["simulation"]["A0_filename"])
 conditions₀ = CSV.read(A0_instance_filename, DataFrame)
 
-
+####################################
 ## INITIALIZATION OF THE EPIDEMICS
+####################################
 
-# Initial number of exposed individuals
-E₀ = zeros(G, M)
-# Initial number of infectious asymptomatic individuals
-A₀ = zeros(Float64, G, M)
+Sᵛ₀ = zeros(Float64,G, M)
+E₀ = zeros(Float64, G, M) # Initial number of exposed individuals
+A₀ = zeros(Float64, G, M) # Initial number of infectious asymptomatic individuals
+I₀ = zeros(Float64, G, M)
+H₀ = zeros(Float64, G, M)
+R₀ = zeros(Float64, G, M)
+
+if A0_instance_filename !== nothing
+
+    # Initial number of infectious asymptomatic individuals
+    # use seeds to initialize simulations
+    conditions₀ = CSV.read(A0_instance_filename, DataFrame)        
+    
+    A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
+    A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
+    A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
+
+    
+else
+    E₀ = nᵢᵍ / total_population * 1000
+    A₀ = nᵢᵍ / total_population * 1000
+    I₀ = nᵢᵍ / total_population * 1000    
+end
 
 println("Total population = ", total_population)
-# Distribution of the intial infected individuals per strata
-# WARN: ni idea de por que es necesario el .+ 1 aqui (las semillas ya vienen indexadas partiendo de 1) 
-# pero si no lo pongo la simulacion simplemente no funciona
 
-#descomentado
-A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
-A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
-A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
-
-#A₀ = A₀ / total_population
-
-# Initial number of infectious symptomatic individuals
-I₀ = zeros(Float64, G, M)
-
-E₀ = nᵢᵍ / total_population * 1000
-A₀ = nᵢᵍ / total_population * 1000
-I₀ = nᵢᵍ / total_population * 1000
-
-H₀ = nᵢᵍ * 0
-# R₀ = population.nᵢᵍ / total_population * 23e5
-R₀ = nᵢᵍ * 0
-#Sᵛ₀ = (population.nᵢᵍ .- E₀ .- A₀ .- I₀ .- H₀ .- R₀) .* 0.5
-Sᵛ₀ = nᵢᵍ * 0
 
 ###########################################################
 ############ SETTING SIMULATION VARIABLES #################
