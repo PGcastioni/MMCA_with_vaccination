@@ -1,0 +1,18 @@
+{
+    "parameters_columns": ["P", "beta", "scale_beta", "t_inc", "scale_ea", "t_i", "delta", "phi", "scale_s"],
+    "parameters_filename": "params.csv",
+    "patch_to_ccaa_filename": "patch_to_ccaa.npy",
+    "fit_alternatives": {
+        "deaths": {
+            "real_data_filename": "ccaa_covid19_fallecidos_long_Marc.csv",
+            "sim_data_pattern": "deaths_new_*.npy",
+            "skip_first_day_simulation": true
+        },
+        "incidence": {
+            "real_data_filename": "ccaa_covid19_incidencia.csv",
+            "sim_data_pattern": "incidence_*.npy",
+            "skip_first_day_simulation": true
+        }
+    }     
+
+}

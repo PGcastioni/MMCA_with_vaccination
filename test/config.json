@@ -5,7 +5,8 @@
 		"A0_filename": "A0_initial_conditions.csv",
 		"initial_compartments": null,
 		"export_compartments_full": true,
-		"export_compartments_time_t": null
+		"export_compartments_time_t": null,
+		"output_folder": "output"
 	},
 	"data": {
         	"kappa0_filename": "kappa0_from_mitma.csv",
