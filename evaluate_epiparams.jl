@@ -16,6 +16,7 @@ using ArgParse
 using HDF5
 
 include("MMCAcovid19_vac/markov_vac_aux.jl")
+include("MMCAcovid19_vac/markov_vac_io.jl")
 include("MMCAcovid19_vac/markov_vac.jl")
 
 function create_default_epiparameters()

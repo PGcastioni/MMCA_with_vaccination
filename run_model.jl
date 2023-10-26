@@ -1,22 +1,27 @@
-using DelimitedFiles
-using Statistics
-using DataFrames
-using CSV
+#using DelimitedFiles
+
+
 using Printf
-using DataStructures
-using Base.Threads
-using ProgressMeter
-using NPZ
 using ArgParse
-using JSON
+using Logging
+
 using Dates
-using ArgParse
+using CSV
+using NPZ
+using JSON
 using HDF5
+using DataStructures
+using DelimitedFiles
+using DataFrames
+
+
 
 base_folder = ""
 
 include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac_aux.jl"))
+include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac_io.jl"))
 include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac.jl"))
+
 
 ####################################################
 ##############   FUNCTIONS     #####################
@@ -52,61 +57,28 @@ function set_compartments!(epi_params, initial_compartments)
     epi_params.ρᴰᵍᵥ[isnan.(epi_params.ρᴰᵍᵥ)] .= 0
 end
 
-function run_simu_params!(epi_params::Epidemic_Params,
-                            population::Population_Params,
-                            E₀::Array{Float64, 2},
-                            A₀::Array{Float64, 2},
-                            I₀::Array{Float64, 2},
-                            H₀::Array{Float64, 2},
-                            R₀::Array{Float64, 2},
-                            Sᵛ₀::Array{Float64, 2},
-                            compartments::Union{Nothing, Array{Float64, 5}})
-
-
-    ## RUN EPIDEMIC SPREADING
-    run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
-
-    # Store compartments to later export (can't write to disk here, hdf5 is not thread safe)
-    if export_compartments
-        compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
-        compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
-    end
-    # PIER: if we want to save just the age, location and time infos we have to use
-    # compartments[:, :, :, :, 1] .= sum( epi_params.ρˢᵍᵥ .* population.nᵢᵍ, dims=(4) )[:,:,:,1]
-    end
-
 ###########################################
 ############# FILE READING ################
 ###########################################
 
-data_path = joinpath(base_folder,"data/")
-instance_path = joinpath(base_folder,"test")
+args = parse_commandline()
+
+config_fname  = args["config"]
+data_path     = args["data-folder"]
+instance_path = args["instance-folder"]
+
+config = JSON.parsefile(config_fname);
+update_config!(config, args)
+
 
 # Output simulation
 output_path = joinpath(instance_path, "output")
 
-
-config_fname = joinpath(instance_path, "config.json")
-config = JSON.parsefile(config_fname);
-
-fitting_params_fname = joinpath(instance_path, "fitting_parameters.json")
-fitting_params = JSON.parsefile(fitting_params_fname)
-
 vacparams_dict = config["vaccination"]
 npiparams_dict = config["NPI"]
 epiparams_dict = config["model"]
-
-first_day = Date(config["simulation"]["first_day_simulation"])
-last_day = Date(config["simulation"]["last_day_simulation"])
-
+first_day      = Date(config["simulation"]["first_day_simulation"])
+last_day       = Date(config["simulation"]["last_day_simulation"])
 
 #T: time steps
 T = (last_day - first_day).value + 1
@@ -115,7 +87,6 @@ A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
 
 initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
-#initial_compartments_path = joinpath(instance_path, initial_compartments_path)
 
 if A0_instance_filename !== nothing && initial_compartments_path !== nothing
     println("ERROR!!!")
@@ -155,7 +126,7 @@ sᵢ = CSV.read(joinpath(data_path, config["data"]["surface_filename"]), DataFra
 # Population info
 nᵢ_ages = CSV.read(joinpath(data_path, config["data"]["population_age_filename"], ), DataFrame);
 # Patch population by age
-nᵢᵍ = copy(transpose(Array{Float64,2}(nᵢ_ages[:,epiparams_dict["age_labels"]])))
+nᵢᵍ = copy(transpose(Array{Float64,2}(nᵢ_ages[:, epiparams_dict["age_labels"]])))
 # Total patch population
 nᵢ = Array{Float64,1}(nᵢ_ages[:,"Total"])
 # Total population
@@ -281,29 +252,16 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 
 
 
-########################################################
-################ RUN THE SIMULATION ####################
-########################################################
-
-
+##################################################
+####### INITIALIZATION OF THE EPIDEMICS ##########
+##################################################
 
 # structs to store parameters
 population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
 epi_param = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
-# array for storing output
-compartments = zeros(Float64, G, M, T, V, num_compartments);
 
 
-##################################################
-####### INITIALIZATION OF THE EPIDEMICS ##########
-##################################################
-"""
-se pueden inicializar los compartimentos fuera de la funcion 
-run_simu_params!() porque solo hay una simulacion
-"""
-# Reset compartments
-reset_params!(epi_params, population)
-
+# Initial seeds (intial condition at the begining of the pandemic)
 # Load initial full conditions
 if initial_compartments_path !== nothing
     # use initial compartments matrix to initialize simulations
@@ -313,25 +271,21 @@ if initial_compartments_path !== nothing
     # set the full initial condition o a user defined
     set_compartments!(epi_params, initial_compartments)
 else
-    Sᵛ₀ = zeros(Float64,G, M)
-    E₀ = zeros(Float64, G, M)
-    A₀ = zeros(Float64, G, M)
-    I₀ = zeros(Float64, G, M)
-    H₀ = zeros(Float64, G, M)
-    R₀ = zeros(Float64, G, M)
-
+    Sᵛ₀ = zeros(Float64, G, M)
+    E₀  = zeros(Float64, G, M)
+    A₀  = zeros(Float64, G, M)
+    I₀  = zeros(Float64, G, M)
+    H₀  = zeros(Float64, G, M)
+    R₀  = zeros(Float64, G, M)
     if A0_instance_filename !== nothing
-
         # Initial number of infectious asymptomatic individuals
         # use seeds to initialize simulations
         conditions₀ = CSV.read(A0_instance_filename, DataFrame)        
-        
         A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
         A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
-        A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]
-
-        
+        A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]    
     else
+        # Initial set custom number of infected
         E₀ = nᵢᵍ / total_population * 1000
         A₀ = nᵢᵍ / total_population * 1000
         I₀ = nᵢᵍ / total_population * 1000    
@@ -339,41 +293,39 @@ else
     set_initial_conditions!(epi_param, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
 end
 
-# Initial seeds (intial condition at the begining of the pandemic)
+########################################################
+################ RUN THE SIMULATION ####################
+########################################################
 
-
-    
-# Run the simulation
-run_simu_params!(epi_param,
-                 population,
-                 E₀,
-                 A₀,
-                 I₀,
-                 H₀,
-                 R₀,
-                 Sᵛ₀,
-                compartments)   
-
+run_epidemic_spreading_mmca!(epi_param, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
 
 ##############################################################
 ################## STORING THE RESULTS #######################
 ##############################################################
 
-println("Storing results to: $output_path")
-
-if !isdir(output_path)
-  mkpath(output_path)
-end
-
-
-
-# store compartments
 if export_compartments
-    println("Storing compartments")
+    if !isdir(output_path)
+        println("Creating output folder: $output_path")
+        mkpath(output_path)
+    end
 
+    # array for storing output
+    compartments = zeros(Float64, G, M, T, V, num_compartments);
+    compartments[:, :, :, :, 1]  .= epi_param.ρˢᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 2]  .= epi_param.ρᴱᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 3]  .= epi_param.ρᴬᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 4]  .= epi_param.ρᴵᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 5]  .= epi_param.ρᴾᴴᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 6]  .= epi_param.ρᴾᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 7]  .= epi_param.ρᴴᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 8]  .= epi_param.ρᴴᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 9]  .= epi_param.ρᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 10] .= epi_param.ρᴰᵍᵥ .* population.nᵢᵍ
     if export_compartments_time_t != nothing
-        filename = joinpath(output_path, "compartments_$(export_compartments_date).h5")
-        # filename = joinpath(output_path, "compartments_$(export_compartments_date):$(export_compartments_time_t)_$id.h5")
+        filename = joinpath(output_path, "compartments_$(export_compartments_date)_step_$(export_compartments_time_t).h5")
+        println("Storing compartments at single date $(export_compartments_date):")
+        println("\t- Simulation step: $(export_compartments_time_t)")
+        println("\t- filename: $(filename)")
         h5open(filename, "w") do file
             write(file, "compartments", compartments[:,:,export_compartments_time_t,:,:])
         end
@@ -381,6 +333,8 @@ if export_compartments
 
     if export_compartments_full
         filename = joinpath(output_path, "compartments_full.h5")
+        println("Storing full compartments:")
+        println("\t- filename: $(filename)")
         h5open(filename, "w") do file
             write(file, "compartments", compartments[:,:,:,:,:])
         end
