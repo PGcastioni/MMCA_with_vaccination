@@ -67,7 +67,7 @@ function parse_commandline()
             required = true
         "--instance-folder", "-i"
             help = "instance folder (experiment folder)"
-            default = nothing
+            required = true
         "--params", "-p"
             help = "parameters file (params.csv)"
             default = nothing
