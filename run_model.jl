@@ -258,8 +258,12 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 
 # structs to store parameters
 population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
-epi_param = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+epi_params = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 
+
+# vac_parms = Vaccination_Params(tᵛs, ϵᵍs)
+# npi_params = NPI_Params(tᶜs, κ₀s, ϕs, δs)
+# run_epidemic_spreading_mmca!(epi_params, population, npi_params, vac_parms; verbose = true )
 
 # Initial seeds (intial condition at the begining of the pandemic)
 # Load initial full conditions
@@ -290,14 +294,14 @@ else
         A₀ = nᵢᵍ / total_population * 1000
         I₀ = nᵢᵍ / total_population * 1000    
     end
-    set_initial_conditions!(epi_param, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
+    set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
 end
 
 ########################################################
 ################ RUN THE SIMULATION ####################
 ########################################################
 
-run_epidemic_spreading_mmca!(epi_param, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
+run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
 
 ##############################################################
 ################## STORING THE RESULTS #######################
@@ -311,16 +315,16 @@ if export_compartments
 
     # array for storing output
     compartments = zeros(Float64, G, M, T, V, num_compartments);
-    compartments[:, :, :, :, 1]  .= epi_param.ρˢᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 2]  .= epi_param.ρᴱᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 3]  .= epi_param.ρᴬᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 4]  .= epi_param.ρᴵᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 5]  .= epi_param.ρᴾᴴᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 6]  .= epi_param.ρᴾᴰᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 7]  .= epi_param.ρᴴᴿᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 8]  .= epi_param.ρᴴᴰᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 9]  .= epi_param.ρᴿᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 10] .= epi_param.ρᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
     if export_compartments_time_t != nothing
         filename = joinpath(output_path, "compartments_$(export_compartments_date)_step_$(export_compartments_time_t).h5")
         println("Storing compartments at single date $(export_compartments_date):")
