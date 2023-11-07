@@ -128,3 +128,58 @@ function update_config!(config, cmd_line_args)
 
     nothing
 end
+
+
+
+"""
+save_simulation_hdf5(epi_params::Epidemic_Params,
+                         population::Population_Params,
+                         output_fname::String;
+                         export_time_t = -1)
+
+Save the full simulations.
+
+# Arguments
+
+- `epi_params::Epidemic_Params`: Structure that contains all epidemic parameters
+  and the epidemic spreading information.
+- `population::Population_Params`: Structure that contains all the parameters
+  related with the population.
+- `output_fname::String`: Output filename.
+
+## Optional
+
+- `export_time_t = -1`: Time step to ve saved instead of the full simulation.
+"""
+function save_simulation_hdf5(epi_params::Epidemic_Params, 
+                              population::Population_Params,
+                              output_fname;
+                              export_time_t = -1)
+
+    G = population.G
+    M = population.M
+    T = epi_params.T
+    V = epi_params.V
+    N = epi_params.NumComps
+
+    compartments = zeros(Float64, G, M, T, V, N);
+    compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
+    if export_time_t > 0
+        h5open(output_fname, "w") do file
+            write(file, "compartments", compartments[:,:,export_time_t,:,:])
+        end
+    else
+        h5open(output_fname, "w") do file
+            write(file, "compartments", compartments[:,:,:,:,:])
+        end
+    end
+end
