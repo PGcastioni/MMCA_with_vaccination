@@ -1,2 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+env/
+
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+
+# dotenv
+.env
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+
+# mypy
+.mypy_cache/
+
+.DS_Store
+
+*tfevents*
+.*.swp
+
+.pytest_cache/
+
 Project.toml
 Manifest.toml
+
+test/output

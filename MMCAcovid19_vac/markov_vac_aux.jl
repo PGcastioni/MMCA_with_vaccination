@@ -31,6 +31,7 @@ All the parameters contained in this structure are probabilities ranged between
 - `Γ::Float64`: Probability of losing the disease-acquired immunity
 - `T::Int64`: Number of epidemic timesteps.
 - `V::Int64`: Number of stages in the vaccination process
+- `NumComps::Int64`: Number of epidemiological compartments
 - `rᵥ::Array{Float64, 1}`: Vaccine efficacy in preventing infections
 - `kᵥ::Array{Float64, 1}`: Vaccine efficacy in preventing tranmission
 
@@ -99,6 +100,9 @@ struct Epidemic_Params
     rᵥ::Array{Float64, 1}
     kᵥ::Array{Float64, 1}
 
+    # The total number of compartments
+    NumComps::Int64
+
     # Compartments evolution
     ρˢᵍᵥ::Array{Float64, 4}
     ρᴱᵍᵥ::Array{Float64, 4}
@@ -110,6 +114,8 @@ struct Epidemic_Params
     ρᴴᴰᵍᵥ::Array{Float64, 4}
     ρᴰᵍᵥ::Array{Float64, 4}
     ρᴿᵍᵥ::Array{Float64, 4}
+    
+    # Fraction of securely confined individuals for each strata and patch.
     CHᵢᵍᵥ::Array{Float64, 3}
     
     # R_t related arrays
@@ -198,6 +204,8 @@ function Epidemic_Params(βᴵ::Float64,
                          T::Int64,
                          V::Int64)
 
+    NumComps = 10
+    
     # Allocate memory for simulations
     ρˢᵍᵥ  = ones(Float64, G, M, T, V)
     ρᴱᵍᵥ  = zeros(Float64, G, M, T, V)
@@ -215,7 +223,7 @@ function Epidemic_Params(βᴵ::Float64,
     return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
                            copy(θᵍ), copy(γᵍ), copy(ζᵍ), copy(λᵍ), copy(ωᵍ),
                            copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), T, V, copy(rᵥ), copy(kᵥ), 
-                           ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ,
+                           NumComps, ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ,
                            ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, ρᴿᵍᵥ, CHᵢᵍᵥ, Qᵢᵍ)
 end
 

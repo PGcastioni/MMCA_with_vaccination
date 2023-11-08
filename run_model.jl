@@ -70,9 +70,12 @@ instance_path = args["instance-folder"]
 config = JSON.parsefile(config_fname);
 update_config!(config, args)
 
-
 # Output simulation
 output_path = joinpath(instance_path, "output")
+if !isdir(output_path)
+    println("Creating output folder: $output_path")
+    mkpath(output_path)
+end
 
 vacparams_dict = config["vaccination"]
 npiparams_dict = config["NPI"]
@@ -85,7 +88,6 @@ T = (last_day - first_day).value + 1
 
 A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
-
 initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
 
 if A0_instance_filename !== nothing && initial_compartments_path !== nothing
@@ -95,27 +97,15 @@ end
 #########################
 # Simulation output 
 #########################
+
 export_compartments_full = get(config["simulation"], "export_compartments_full", false)
 export_compartments_time_t = get(config["simulation"], "export_compartments_time_t", nothing)
 
-if export_compartments_time_t !== nothing
-    export_compartments_date = first_day + Day(export_compartments_time_t - 1)
-end
-
-if export_compartments_full || export_compartments_time_t !== nothing
-    export_compartments = true
-else
-    export_compartments = false
-end
-
 println("first_day_simulation = ", first_day)
 println("last_day_simulation = ", last_day)
-println("export_compartments = ", export_compartments)
 println("export_compartments_full = ", export_compartments_full)
 println("export_compartments_time_t = ", export_compartments_time_t)
 println("initial_compartments = ", initial_compartments_path)
-
-num_compartments = 10
 
 ########################################
 ####### VARIABLES INITIALIZATION #######
@@ -141,7 +131,6 @@ G = size(C)[1]
 # Num. of vaccination statuses Vaccinated/Non-vaccinated
 V = length(epiparams_dict["kᵥ"])
 
-
 # Loading mobility network
 network = CSV.read(joinpath(data_path, config["data"]["mobility_matrix_filename"]), DataFrame)
 edgelist = Array{Int64, 2}(network[:, 1:2])
@@ -149,8 +138,8 @@ Rᵢⱼ = copy(network[:, 3])
 # Correcting Self Loops
 edgelist, Rᵢⱼ = correct_self_loops(edgelist, Rᵢⱼ, M)
 
-
 ## EPIDEMIC PARAMETERS HUMAN BEHAVIOUR
+
 # Average number of contacts per strata
 kᵍ = Float64.(epiparams_dict["kᵍ"])
 # Average number of contacts at home per strata
@@ -167,6 +156,7 @@ pᵍ = Float64.(epiparams_dict["pᵍ"])
 
 
 ## EPIDEMIC PARAMETERS TRANSITION RATES
+
 # Scaling of the asymptomatic infectivity
 scale_β = epiparams_dict["scale_β"]
 # Infectivity of Symptomatic
@@ -182,6 +172,7 @@ scale_β = epiparams_dict["scale_β"]
 
 
 ## EPIDEMIC PARAMETERS TRANSITION RATES VACCINATION
+
 # Direct death probability
 θᵍ = Float64.(reduce(hcat, [epiparams_dict["θᵍ"], epiparams_dict["θᵍ"] * epiparams_dict["risk_reduction_dd"]]) )
 # Hospitalization probability
@@ -206,13 +197,6 @@ rᵥ = Float64.(epiparams_dict["rᵥ"])
 # Relative risk reduction of the probability of transmission
 kᵥ = Float64.(epiparams_dict["kᵥ"])
 
-
-println("M = ", M)
-println("G = ", G)
-println("T = ", T)
-println("V = ", V)
-println("num_compartments : ", num_compartments)
-
 #########################################################
 # Vaccination parameters
 #########################################################
@@ -227,7 +211,6 @@ end_vacc   = start_vacc + dur_vacc
 
 tᵛs = [start_vacc, end_vacc, T]
 ϵᵍs = ϵᵍ .* [0  Int(vacparams_dict["are_there_vaccines"])  0] 
-
 
 #########################################################
 # Containement measures
@@ -245,12 +228,11 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 # Array of level of confinement
 # κ₀s = κ₀_df.reduction[:]
 κ₀s = Float64.(npiparams_dict["κ₀s"])
+
 # Array of premeabilities of confined households
 ϕs = Float64.(npiparams_dict["ϕs"])
 # Array of social distancing measures
 δs = Float64.(npiparams_dict["δs"])
-
-
 
 ##################################################
 ####### INITIALIZATION OF THE EPIDEMICS ##########
@@ -260,6 +242,11 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
 epi_params = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 
+println("M = ", M)
+println("G = ", G)
+println("T = ", T)
+println("V = ", V)
+println("N. of epi compartments = ", epi_params.NumComps)
 
 # vac_parms = Vaccination_Params(tᵛs, ϵᵍs)
 # npi_params = NPI_Params(tᶜs, κ₀s, ϕs, δs)
@@ -307,40 +294,19 @@ run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, 
 ################## STORING THE RESULTS #######################
 ##############################################################
 
-if export_compartments
-    if !isdir(output_path)
-        println("Creating output folder: $output_path")
-        mkpath(output_path)
-    end
+if export_compartments_full
+    filename = joinpath(output_path, "compartments_full.h5")
+    println("Storing full simulation output")
+    println("\t- filename: $(filename)")
+    save_simulation_hdf5(epi_params, population, filename)
+end
 
-    # array for storing output
-    compartments = zeros(Float64, G, M, T, V, num_compartments);
-    compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
-    compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
-    if export_compartments_time_t != nothing
-        filename = joinpath(output_path, "compartments_$(export_compartments_date)_step_$(export_compartments_time_t).h5")
-        println("Storing compartments at single date $(export_compartments_date):")
-        println("\t- Simulation step: $(export_compartments_time_t)")
-        println("\t- filename: $(filename)")
-        h5open(filename, "w") do file
-            write(file, "compartments", compartments[:,:,export_compartments_time_t,:,:])
-        end
-    end
-
-    if export_compartments_full
-        filename = joinpath(output_path, "compartments_full.h5")
-        println("Storing full compartments:")
-        println("\t- filename: $(filename)")
-        h5open(filename, "w") do file
-            write(file, "compartments", compartments[:,:,:,:,:])
-        end
-    end
+if export_compartments_time_t !== nothing
+    export_compartments_date = first_day + Day(export_compartments_time_t - 1)
+    filename = joinpath(output_path, "compartments_t_$(export_compartments_date).h5")
+    println("Storing compartments at single date $(export_compartments_date):")
+    println("\t- Simulation step: $(export_compartments_time_t)")
+    println("\t- filename: $(filename)")
+    save_simulation_hdf5(epi_params, population, filename; 
+                         export_time_t = export_compartments_time_t)
 end
