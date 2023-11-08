@@ -183,3 +183,39 @@ function save_simulation_hdf5(epi_params::Epidemic_Params,
         end
     end
 end
+
+
+function save_simulation_netCDF(epi_params::Epidemic_Params, 
+                                population::Population_Params,
+                                output_fname;
+                                export_time_t = -1)
+
+    G = population.G
+    M = population.M
+    T = epi_params.T
+    V = epi_params.V
+    N = epi_params.NumComps
+
+    compartments = zeros(Float64, G, M, T, V, N);
+    compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 5]  .= epi_params.ρᴾᴴᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 6]  .= epi_params.ρᴾᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 7]  .= epi_params.ρᴴᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
+    compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
+    
+
+    G_coords = ["C", "A", "I"]
+    M_coords = collect(1:M)
+    T_coords = collect(1:T)
+    V_coords = ["NV", "V"]
+    comp_coords = ["S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D"];
+    
+    isfile(output_fname) && rm(output_fname)
+    nccreate(output_fname, "compartments", "G", G_coords, "M", M_coords, "T", T_coords, "V", V_coords, "epi_states", comp_coords)
+    ncwrite(compartments, output_fname, "data")
+end
