@@ -255,6 +255,31 @@ function reset_epidemic_params!(epi_params::Epidemic_Params)
     nothing
 end
 
+"""
+VACCINATION PARAMETERS
+
+Struct that contains the parameters related with vaccination 
+strageties
+
+#Parameters
+  - ϵᵍ:
+  - tᵛs:
+  - ϵᵍs:
+
+"""
+
+
+
+"""
+CONTAINEMENT PARAMETERS
+
+Struct that contains the parameters related with containement
+measures
+
+#Parameters
+  - 
+"""
+
 
 ### ----------------------------------------------------------------------------
 ### PATCH AND POPULATION RELATED FUNCTIONS
