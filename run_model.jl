@@ -213,7 +213,7 @@ tᵛs = [start_vacc, end_vacc, T]
 ϵᵍs = ϵᵍ .* [0  Int(vacparams_dict["are_there_vaccines"])  0] 
 
 #########################################################
-# Containement measures
+# Containment measures
 #########################################################
 
 # Mobility reduction
@@ -229,7 +229,7 @@ tᶜs = Int64.(npiparams_dict["tᶜs"])
 # κ₀s = κ₀_df.reduction[:]
 κ₀s = Float64.(npiparams_dict["κ₀s"])
 
-# Array of premeabilities of confined households
+# Array of permeabilities of confined households
 ϕs = Float64.(npiparams_dict["ϕs"])
 # Array of social distancing measures
 δs = Float64.(npiparams_dict["δs"])
