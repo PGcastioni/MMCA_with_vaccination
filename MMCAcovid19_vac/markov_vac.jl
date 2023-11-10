@@ -186,8 +186,8 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                 
                 ### Pier: I moved inside the loop all the things that were outside before
                 # Reset values
-                    τᵢᵍᵥ[g, i, :] .= 0.
-                    Pᵢᵍᵥ[g, i, :] .= 0.
+                τᵢᵍᵥ[g, i, :] .= 0.
+                Pᵢᵍᵥ[g, i, :] .= 0.
 
                 if tᶜ == t
                     aux = ρˢᵍᵥ[g, i, t, v]
