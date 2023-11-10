@@ -77,14 +77,13 @@ if !isdir(output_path)
     mkpath(output_path)
 end
 
-vacparams_dict = config["vaccination"]
-npiparams_dict = config["NPI"]
-epiparams_dict = config["model"]
-first_day      = Date(config["simulation"]["first_day_simulation"])
-last_day       = Date(config["simulation"]["last_day_simulation"])
-
-#T: time steps
+# Reading simulation start and end dates
+first_day = Date(config["simulation"]["first_day_simulation"])
+last_day  = Date(config["simulation"]["last_day_simulation"])
+# Converting dates to time steps
 T = (last_day - first_day).value + 1
+
+T_coords = string.(collect(first_day:last_day))
 
 A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
@@ -93,6 +92,7 @@ initial_compartments_path = get(config["simulation"], "initial_compartments", no
 if A0_instance_filename !== nothing && initial_compartments_path !== nothing
     println("ERROR!!!")
 end
+
 
 #########################
 # Simulation output 
@@ -111,106 +111,61 @@ println("initial_compartments = ", initial_compartments_path)
 ####### VARIABLES INITIALIZATION #######
 ########################################
 
-# Patch surface
-sᵢ = CSV.read(joinpath(data_path, config["data"]["surface_filename"]), DataFrame)[:,"area"]
-# Population info
-nᵢ_ages = CSV.read(joinpath(data_path, config["data"]["population_age_filename"], ), DataFrame);
-# Patch population by age
-nᵢᵍ = copy(transpose(Array{Float64,2}(nᵢ_ages[:, epiparams_dict["age_labels"]])))
-# Total patch population
-nᵢ = Array{Float64,1}(nᵢ_ages[:,"Total"])
-# Total population
-total_population = sum(nᵢ)
+data_dict        = config["data"]
+epi_params_dict  = config["epidemic_params"]
+pop_params_dict  = config["population_params"]
+vac_params_dict  = config["vaccination"]
+npi_params_dict  = config["NPI"]
 
-# Age Contact Matrix
-C = readdlm(joinpath(data_path, config["data"]["contact_matrix_filename"]), ',', Float64)
-# Num. of patches
-M = length(nᵢ)
-# Num of stratas
-G = size(C)[1]
-# Num. of vaccination statuses Vaccinated/Non-vaccinated
-V = length(epiparams_dict["kᵥ"])
+# Population info
+
+# Loading metapopulation patches info (surface, label, population by age)
+metapop_data_filename    = joinpath(data_path, data_dict["metapopulation_data_filename"])
+metapop_df = CSV.read(metapop_data_filename, DataFrame)
 
 # Loading mobility network
-network = CSV.read(joinpath(data_path, config["data"]["mobility_matrix_filename"]), DataFrame)
-edgelist = Array{Int64, 2}(network[:, 1:2])
-Rᵢⱼ = copy(network[:, 3])
-# Correcting Self Loops
-edgelist, Rᵢⱼ = correct_self_loops(edgelist, Rᵢⱼ, M)
+mobility_matrix_filename = joinpath(data_path, data_dict["mobility_matrix_filename"])
+network_df  = CSV.read(mobility_matrix_filename, DataFrame)
 
-## EPIDEMIC PARAMETERS HUMAN BEHAVIOUR
+# Metapopulations patches coordinates (labels)
+M_coords = map(String,metapop_df[:, "id"])
+M = length(M_coords)
 
-# Average number of contacts per strata
-kᵍ = Float64.(epiparams_dict["kᵍ"])
-# Average number of contacts at home per strata
-kᵍ_h = Float64.(epiparams_dict["kᵍ_h"])
-# Average number of contacts at work per strata
-kᵍ_w = Float64.(epiparams_dict["kᵍ_w"])
-# Degree of mobility per strata
-pᵍ = Float64.(epiparams_dict["pᵍ"])
-# Density factor
-ξ = epiparams_dict["σ"]
-# Average household size
-σ = epiparams_dict["σ"]
-# Check network structure and self-loop correction
+# Coordinates for each age strata (labels)
+G_coords = map(String, pop_params_dict["age_labels"])
+G = length(G_coords)
 
+# Num. of vaccination statuses Vaccinated/Non-vaccinated
+V = length(epi_params_dict["kᵥ"])
 
-## EPIDEMIC PARAMETERS TRANSITION RATES
+##################################################
+####### INITIALIZATION OF THE EPIDEMICS ##########
+##################################################
 
-# Scaling of the asymptomatic infectivity
-scale_β = epiparams_dict["scale_β"]
-# Infectivity of Symptomatic
-βᴵ = epiparams_dict["βᴵ"]
-# Infectivity of Asymptomatic
-βᴬ = scale_β * βᴵ
-# Exposed rate
-ηᵍ = Float64.(epiparams_dict["ηᵍ"])
-# Asymptomatic rate
-αᵍ = Float64.(epiparams_dict["αᵍ"])
-# Infectious rate
-μᵍ = Float64.(epiparams_dict["μᵍ"])
+## POPULATION PARAMETERS
+population = init_pop_param_struct(G, M, G_coords, 
+                                   pop_params_dict, 
+                                   metapop_df, network_df)
+## EPIDEMIC PARAMETERS 
+epi_params = init_epi_parameters_struct(G, M, G_coords, epi_params_dict)
 
 
-## EPIDEMIC PARAMETERS TRANSITION RATES VACCINATION
-
-# Direct death probability
-θᵍ = Float64.(reduce(hcat, [epiparams_dict["θᵍ"], epiparams_dict["θᵍ"] * epiparams_dict["risk_reduction_dd"]]) )
-# Hospitalization probability
-γᵍ = Float64.(reduce(hcat, [epiparams_dict["γᵍ"], epiparams_dict["γᵍ"] * epiparams_dict["risk_reduction_h"]]) )
-# Fatality probability in ICU
-ωᵍ = Float64.(reduce(hcat, [epiparams_dict["ωᵍ"], epiparams_dict["ωᵍ"] * epiparams_dict["risk_reduction_d"]]) )
-# Pre-deceased rate
-ζᵍ = Float64.(epiparams_dict["ζᵍ"])
-# Pre-hospitalized in ICU rate
-λᵍ = Float64.(epiparams_dict["λᵍ"])
-# Death rate in ICU
-ψᵍ = Float64.(epiparams_dict["ψᵍ"])
-# ICU discharge rate
-χᵍ = Float64.(epiparams_dict["χᵍ"])
-
-# Waning immunity rate 
-Λ = epiparams_dict["Λ"] 
-# Reinfection rate
-Γ = epiparams_dict["Γ"] 
-# Relative risk reduction of the probability of infection
-rᵥ = Float64.(epiparams_dict["rᵥ"])
-# Relative risk reduction of the probability of transmission
-kᵥ = Float64.(epiparams_dict["kᵥ"])
+total_population = sum(population.nᵢᵍ)
 
 #########################################################
 # Vaccination parameters
 #########################################################
 
 # vaccionation dates
-start_vacc = vacparams_dict["start_vacc"]
-dur_vacc   = vacparams_dict["dur_vacc"]
+start_vacc = vac_params_dict["start_vacc"]
+dur_vacc   = vac_params_dict["dur_vacc"]
 end_vacc   = start_vacc + dur_vacc
 
 # total vaccinations per age strata
-ϵᵍ = vacparams_dict["ϵᵍ"] * round( total_population * vacparams_dict["percentage_of_vacc_per_day"] )
+ϵᵍ = vac_params_dict["ϵᵍ"] * round( total_population * vac_params_dict["percentage_of_vacc_per_day"] )
 
 tᵛs = [start_vacc, end_vacc, T]
-ϵᵍs = ϵᵍ .* [0  Int(vacparams_dict["are_there_vaccines"])  0] 
+ϵᵍs = ϵᵍ .* [0  Int(vac_params_dict["are_there_vaccines"])  0] 
 
 #########################################################
 # Containement measures
@@ -223,24 +178,22 @@ tᵛs = [start_vacc, end_vacc, T]
 κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
 
 # Timesteps when the containment measures will be applied
-tᶜs = Int64.(npiparams_dict["tᶜs"])
+tᶜs = Int64.(npi_params_dict["tᶜs"])
 
 # Array of level of confinement
 # κ₀s = κ₀_df.reduction[:]
-κ₀s = Float64.(npiparams_dict["κ₀s"])
+κ₀s = Float64.(npi_params_dict["κ₀s"])
 
 # Array of premeabilities of confined households
-ϕs = Float64.(npiparams_dict["ϕs"])
+ϕs = Float64.(npi_params_dict["ϕs"])
 # Array of social distancing measures
-δs = Float64.(npiparams_dict["δs"])
+δs = Float64.(npi_params_dict["δs"])
 
-##################################################
-####### INITIALIZATION OF THE EPIDEMICS ##########
-##################################################
 
-# structs to store parameters
-population = Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
-epi_params = Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+
+
+
+
 
 println("M = ", M)
 println("G = ", G)
@@ -299,6 +252,8 @@ if export_compartments_full
     println("Storing full simulation output")
     println("\t- filename: $(filename)")
     save_simulation_hdf5(epi_params, population, filename)
+    filename = joinpath(output_path, "compartments_full.nc")
+    save_simulation_netCDF(epi_params, population, filename;G_coords=G_coords, M_coords=M_coords, T_coords=T_coords)
 end
 
 if export_compartments_time_t !== nothing
