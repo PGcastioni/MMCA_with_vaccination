@@ -1,4 +1,8 @@
 using Logging
+using NetCDF
+
+base_folder
+include("markov_vac_aux.jl")
 
 
 function create_default_epiparameters()
@@ -129,55 +133,84 @@ function update_config!(config, cmd_line_args)
     nothing
 end
 
-function init_parameter_structs(epiparams_dict::Dict)
+function init_pop_param_struct(G::Int64, M::Int64,
+                               G_coords::Array{String, 1},
+                               pop_params_dict::Dict, 
+                               metapop_df::DataFrame,
+                               network_df::DataFrame)
 
-    # Num of stratas
-    G = size(C)[1]
-    # Num. of patches
-    M = length(nᵢ)
-    # Num. of vaccination statuses Vaccinated/Non-vaccinated
-    V = length(epiparams_dict["kᵥ"])
+    # Subpopulations' patch surface
+    sᵢ = metapop_df[:, "area"]
+    # Subpopulation by age strata
+    nᵢᵍ = copy(transpose(Array{Float64,2}(metapop_df[:, G_coords])))
+    # Age Contact Matrix
+    C = Float64.(mapreduce(permutedims, vcat, pop_params_dict["C"]))
+    # Average number of contacts per strata
+    kᵍ = Float64.(pop_params_dict["kᵍ"])
+    # Average number of contacts at home per strata
+    kᵍ_h = Float64.(pop_params_dict["kᵍ_h"])
+    # Average number of contacts at work per strata
+    kᵍ_w = Float64.(pop_params_dict["kᵍ_w"])
+    # Degree of mobility per strata
+    pᵍ = Float64.(pop_params_dict["pᵍ"])
+    # Density factor
+    ξ = pop_params_dict["σ"]
+    # Average household size
+    σ = pop_params_dict["σ"]
 
+    edgelist = Array{Int64, 2}(network_df[:, 1:2])
+    Rᵢⱼ      = copy(network_df[:, 3])
+    edgelist, Rᵢⱼ = correct_self_loops(edgelist, Rᵢⱼ, M)
 
-    ## EPIDEMIC PARAMETERS TRANSITION RATES
+    return Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
+end
+
+function init_epi_parameters_struct(G::Int64, M::Int64,
+                                    G_coords::Array{String, 1}, 
+                                    epi_params_dict::Dict)
+
     # Scaling of the asymptomatic infectivity
-    scale_β = epiparams_dict["scale_β"]
+    scale_β = epi_params_dict["scale_β"]
     # Infectivity of Symptomatic
-    βᴵ = epiparams_dict["βᴵ"]
+    βᴵ = epi_params_dict["βᴵ"]
     # Infectivity of Asymptomatic
     βᴬ = scale_β * βᴵ
     # Exposed rate
-    ηᵍ = Float64.(epiparams_dict["ηᵍ"])
+    ηᵍ = Float64.(epi_params_dict["ηᵍ"])
     # Asymptomatic rate
-    αᵍ = Float64.(epiparams_dict["αᵍ"])
+    αᵍ = Float64.(epi_params_dict["αᵍ"])
     # Infectious rate
-    μᵍ = Float64.(epiparams_dict["μᵍ"])
+    μᵍ = Float64.(epi_params_dict["μᵍ"])
+
+    # Waning immunity rate 
+    Λ = epi_params_dict["Λ"] 
+    # Reinfection rate
+    Γ = epi_params_dict["Γ"] 
 
 
     ## EPIDEMIC PARAMETERS TRANSITION RATES VACCINATION
-    # Direct death probability
-    θᵍ = Float64.(reduce(hcat, [epiparams_dict["θᵍ"], epiparams_dict["θᵍ"] * epiparams_dict["risk_reduction_dd"]]) )
-    # Hospitalization probability
-    γᵍ = Float64.(reduce(hcat, [epiparams_dict["γᵍ"], epiparams_dict["γᵍ"] * epiparams_dict["risk_reduction_h"]]) )
-    # Fatality probability in ICU
-    ωᵍ = Float64.(reduce(hcat, [epiparams_dict["ωᵍ"], epiparams_dict["ωᵍ"] * epiparams_dict["risk_reduction_d"]]) )
-    # Pre-deceased rate
-    ζᵍ = Float64.(epiparams_dict["ζᵍ"])
-    # Pre-hospitalized in ICU rate
-    λᵍ = Float64.(epiparams_dict["λᵍ"])
-    # Death rate in ICU
-    ψᵍ = Float64.(epiparams_dict["ψᵍ"])
-    # ICU discharge rate
-    χᵍ = Float64.(epiparams_dict["χᵍ"])
 
-    # Waning immunity rate 
-    Λ = epiparams_dict["Λ"] 
-    # Reinfection rate
-    Γ = epiparams_dict["Γ"] 
+    # Direct death probability
+    θᵍ = Float64.(reduce(hcat, [epi_params_dict["θᵍ"], epi_params_dict["θᵍ"] * epi_params_dict["risk_reduction_dd"]]) )
+    # Hospitalization probability
+    γᵍ = Float64.(reduce(hcat, [epi_params_dict["γᵍ"], epi_params_dict["γᵍ"] * epi_params_dict["risk_reduction_h"]]) )
+    # Fatality probability in ICU
+    ωᵍ = Float64.(reduce(hcat, [epi_params_dict["ωᵍ"], epi_params_dict["ωᵍ"] * epi_params_dict["risk_reduction_d"]]) )
+    # Pre-deceased rate
+    ζᵍ = Float64.(epi_params_dict["ζᵍ"])
+    # Pre-hospitalized in ICU rate
+    λᵍ = Float64.(epi_params_dict["λᵍ"])
+    # Death rate in ICU
+    ψᵍ = Float64.(epi_params_dict["ψᵍ"])
+    # ICU discharge rate
+    χᵍ = Float64.(epi_params_dict["χᵍ"])
     # Relative risk reduction of the probability of infection
-    rᵥ = Float64.(epiparams_dict["rᵥ"])
+    rᵥ = Float64.(epi_params_dict["rᵥ"])
     # Relative risk reduction of the probability of transmission
-    kᵥ = Float64.(epiparams_dict["kᵥ"])
+    kᵥ = Float64.(epi_params_dict["kᵥ"])
+
+    # Num. of vaccination statuses Vaccinated/Non-vaccinated
+    V = length(kᵥ)
 
     return Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 end
@@ -238,24 +271,34 @@ function save_simulation_hdf5(epi_params::Epidemic_Params,
 end
 
 
-function get_compartment_labels()
-    return ["S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D"];
-end
-
 
 function save_simulation_netCDF(epi_params::Epidemic_Params, 
-                                population::Population_Params,
-                                output_fname;
-                                M_coords = nothing,
-                                T_coords = nothing)
-
+                                    population::Population_Params,
+                                    output_fname::String;
+                                    G_coords= nothing,
+                                    M_coords = nothing,
+                                    T_coords = nothing
+                                    )
     G = population.G
     M = population.M
     T = epi_params.T
     V = epi_params.V
-    N = epi_params.NumComps
+    S = epi_params.NumComps
+    comp_coords = epi_params.CompLabels
 
-    compartments = zeros(Float64, G, M, T, V, N);
+    if isnothing(G_coords)
+        G_coords = collect(1:G)
+    end
+    if isnothing(M_coords)
+        M_coords = collect(1:M)
+    end
+    if isnothing(T_coords)
+        T_coords = collect(1:T) 
+    end
+
+    V_coords = ["NV", "V"]
+
+    compartments = zeros(Float64, G, M, T, V, S);
     compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
     compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
     compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
@@ -266,23 +309,9 @@ function save_simulation_netCDF(epi_params::Epidemic_Params,
     compartments[:, :, :, :, 8]  .= epi_params.ρᴴᴰᵍᵥ .* population.nᵢᵍ
     compartments[:, :, :, :, 9]  .= epi_params.ρᴿᵍᵥ .* population.nᵢᵍ
     compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
-    
-
-    G_coords = ["Y", "M", "O"]
-    
-    
-    if isnothing(M_coords)
-        M_coords = collect(1:M)
-    end
-    
-    if isnothing(T_coords)
-        T_coords = collect(1:T)
-    end
-    
-    V_coords = ["NV", "V"]
-    comp_coords = get_compartment_labels()
-    
     isfile(output_fname) && rm(output_fname)
-    nccreate(output_fname, "compartments", "G", G_coords, "M", M_coords, "T", T_coords, "V", V_coords, "epi_states", comp_coords)
+
+    nccreate(output_fname, "data", "G", G_coords, "M", M_coords, "T", T_coords, "V", V_coords, "epi_states", collect(comp_coords))
     ncwrite(compartments, output_fname, "data")
+
 end
