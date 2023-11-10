@@ -20,11 +20,11 @@ All the parameters contained in this structure are probabilities ranged between
 - `ηᵍ::Array{Float64, 1}`: Exposed rate for each strata.
 - `αᵍ::Array{Float64, 1}`: Asymptomatic infectious rate for each strata.
 - `μᵍ::Array{Float64, 1}`: Infectious rate for each strata.
-- `θᵍ::Array{Float64, 1}`: Direct death probability for each strata.
-- `γᵍ::Array{Float64, 1}`: ICU probability for each strata.
+- `θᵍ::Array{Float64, 2}`: Direct death probability for each strata.
+- `γᵍ::Array{Float64, 2}`: ICU probability for each strata.
 - `ζᵍ::Array{Float64, 1}`: Pre-deceased rate for each strata.
 - `λᵍ::Array{Float64, 1}`: Pre-hospitalized in ICU rate for each strata.
-- `ωᵍ::Array{Float64, 1}`: Fatality probability in ICU for each strata.
+- `ωᵍ::Array{Float64, 2}`: Fatality probability in ICU for each strata.
 - `ψᵍ::Array{Float64, 1}`: Death rate in iCU for each strata.
 - `χᵍ::Array{Float64, 1}`: ICU discharge rate for each strata.
 - `Λ::Float64`: Probability of losing the vaccine-acquired immunity
@@ -37,34 +37,34 @@ All the parameters contained in this structure are probabilities ranged between
 
 # Compartmental evolution
 
-- `ρˢᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρˢᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of suceptible individuals for each
   strata, patch and vaccination status.
-- `ρᴱᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴱᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of exposed individuals for each
   strata, patch and vaccination status.
-- `ρᴬᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴬᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of asymptomatic individuals for
   each strata, patch and vaccination status.
-- `ρᴵᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴵᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of symptomatic individuals for each
   strata, patch and vaccination status.
-- `ρᴾᴴᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴾᴴᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of pre-hospitalized to ICU
   individuals for each strata, patch and vaccination status.
-- `ρᴾᴰᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴾᴰᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of pre-deceased individuals for each strata, patch 
   and vaccination status.
-- `ρᴴᴿᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴴᴿᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of hospitalized in ICU patients who
   will recover for each strata, patch and vaccination status.
-- `ρᴴᴰᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴴᴰᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of hospitalized in ICU patients who
   will not recover for each strata, patch and vaccination status.
-- `ρᴰᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴰᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of deceased individuals for each
   strata, patch and vaccination status.
-- `ρᴿᵍᵥ::Array{Float64, 3}`: Matrix of size ``G \\times M \\times T \\times V`` containing
+- `ρᴿᵍᵥ::Array{Float64, 4}`: Matrix of size ``G \\times M \\times T \\times V`` containing
   infomation about the evolution of fraction of recovered individuals for each
   strata, patch and vaccination status.
 
@@ -264,8 +264,8 @@ Struct that contains the parameters related with vaccination
 strageties
 
 #Parameters
-  - ϵᵍ:
-  - tᵛs:
+  - ϵᵍ: total vaccinations per age strata
+  - tᵛs: 
   - ϵᵍs:
 
 """
@@ -273,13 +273,16 @@ strageties
 
 
 """
-CONTAINEMENT PARAMETERS
+CONTAINMENT PARAMETERS
 
 Struct that contains the parameters related with containement
 measures
 
 #Parameters
-  - 
+  - κ₀s: Array of level of confinement
+  - ϕs: Array of permeabilities of confined households
+  - δs: Array of social distancing measures
+  - tᶜs: Timesteps when the containment measures will be applied
 """
 
 
