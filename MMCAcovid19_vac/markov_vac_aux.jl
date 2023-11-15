@@ -102,7 +102,7 @@ struct Epidemic_Params
 
     # The total number of compartments
     NumComps::Int64
-    CompLabels::Tuple
+    CompLabels::Array{String, 1}
 
     # Compartments evolution
     ρˢᵍᵥ::Array{Float64, 4}
@@ -206,7 +206,7 @@ function Epidemic_Params(βᴵ::Float64,
                          V::Int64)
 
     NumComps = 10
-    CompLabels = ("S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D")
+    CompLabels = ["S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D"]
     
     # Allocate memory for simulations
     ρˢᵍᵥ  = ones(Float64, G, M, T, V)
