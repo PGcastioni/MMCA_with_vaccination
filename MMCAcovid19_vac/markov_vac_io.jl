@@ -5,14 +5,8 @@ base_folder
 include("markov_vac_aux.jl")
 
 
-function create_default_epiparameters()
+function create_default_epi_params()
     epiparams_dict = Dict()
-    epiparams_dict["kᵍ"] = [11.8, 13.3, 6.76]
-    epiparams_dict["kᵍ_h"] = [3.15, 3.17, 3.28]
-    epiparams_dict["kᵍ_w"] = [1.72, 5.18, 0.0]
-    epiparams_dict["pᵍ"] = [0.0, 1.0, 0.00]
-    epiparams_dict["ξ"] = 0.01
-    epiparams_dict["σ"] = 2.5
     epiparams_dict["scale_β"] = 0.51
     epiparams_dict["βᴵ"] = 0.0903
     epiparams_dict["ηᵍ"] = [0.2747252747252747, 0.2747252747252747, 0.2747252747252747]
@@ -20,20 +14,37 @@ function create_default_epiparameters()
     epiparams_dict["μᵍ"] = [1.0, 0.3125, 0.3125]
     epiparams_dict["θᵍ"] = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
     epiparams_dict["γᵍ"] = [0.003, 0.01, 0.08]
-    epiparams_dict["risk_reduction_h"] = 0.1
-    epiparams_dict["ωᵍ"] = [0.0, 0.04, 0.3]
-    epiparams_dict["risk_reduction_d"] = 0.05
     epiparams_dict["ζᵍ"] = [0.12820512820512822, 0.12820512820512822, 0.12820512820512822]
     epiparams_dict["λᵍ"] = [1.0, 1.0, 1.0]
+    epiparams_dict["ωᵍ"] = [0.0, 0.04, 0.3]
     epiparams_dict["ψᵍ"] = [0.14285714285714285, 0.14285714285714285, 0.14285714285714285]
     epiparams_dict["χᵍ"] = [0.047619047619047616, 0.047619047619047616, 0.047619047619047616]
     epiparams_dict["Λ"] = 0.02
     epiparams_dict["Γ"] = 0.01
     epiparams_dict["rᵥ"] = [0.0, 0.6]
     epiparams_dict["kᵥ"] = [0.0, 0.4]
-    epiparams_dict["age_labels"] = ["Y", "M", "O"]
-
+    epiparams_dict["risk_reduction_dd"] = 0.0
+    epiparams_dict["risk_reduction_h"] = 0.1
+    epiparams_dict["risk_reduction_d"] = 0.05
+    
     return epiparams_dict
+end
+
+function create_default_population_params()
+    population = Dict()
+    populaiont["age_labels"] = ["Y", "M", "O"]
+    populaiont["C"] = [ 0.598  0.38486 0.01714 ;
+                        0.244  0.721   0.0353;
+                        0.1919 0.5705  0.2376
+                      ]
+    population["kᵍ"] = [11.8, 13.3, 6.76]
+    population["kᵍ_h"] = [3.15, 3.17, 3.28]
+    population["kᵍ_w"] = [1.72, 5.18, 0.0]
+    population["pᵍ"] = [0.0, 1.0, 0.00]
+    population["ξ"] = 0.01
+    population["σ"] = 2.5
+    
+    return population
 end
 
 function create_default_vacparameters()
@@ -99,8 +110,12 @@ end
 
 function update_config!(config, cmd_line_args)
     # Define dictionary containing epidemic parameters
-    if !haskey(config, "model")
-        config["model"] = create_default_epiparameters()
+    if !haskey(config, "epidemic_params")
+        config["epidemic_params"] = create_default_epi_params()
+    end
+
+    if !haskey(config, "population_params")
+        config["population_params"] = create_default_population_params()
     end
 
     # Define dictionary containing vaccination parameters
@@ -114,16 +129,16 @@ function update_config!(config, cmd_line_args)
     end
 
     # overwrite config with command line
-    if cmd_line_args["start-date"] != nothing
+    if cmd_line_args["start-date"] !== nothing
         config["simulation"]["first_day_simulation"] = cmd_line_args["start-date"]
     end
-    if cmd_line_args["end-date"] != nothing
+    if cmd_line_args["end-date"] !== nothing
         config["simulation"]["last_day_simulation"] = cmd_line_args["end-date"]
     end
-    if cmd_line_args["initial-compartments"] != nothing
+    if cmd_line_args["initial-compartments"] !== nothing
         config["simulation"]["initial_compartments"] = cmd_line_args["initial-compartments"]
     end
-    if cmd_line_args["export-compartments-time-t"] != nothing
+    if cmd_line_args["export-compartments-time-t"] !== nothing
         config["simulation"]["export_compartments_time_t"] = cmd_line_args["export-compartments-time-t"]
     end
     if cmd_line_args["export-compartments-full"] == true
@@ -223,19 +238,19 @@ save_simulation_hdf5(epi_params::Epidemic_Params,
                          output_fname::String;
                          export_time_t = -1)
 
-Save the full simulations.
+    Save the full simulations.
 
-# Arguments
+    # Arguments
 
-- `epi_params::Epidemic_Params`: Structure that contains all epidemic parameters
-  and the epidemic spreading information.
-- `population::Population_Params`: Structure that contains all the parameters
-  related with the population.
-- `output_fname::String`: Output filename.
+    - `epi_params::Epidemic_Params`: Structure that contains all epidemic parameters
+    and the epidemic spreading information.
+    - `population::Population_Params`: Structure that contains all the parameters
+    related with the population.
+    - `output_fname::String`: Output filename.
 
-## Optional
+    ## Optional
 
-- `export_time_t = -1`: Time step to ve saved instead of the full simulation.
+    - `export_time_t = -1`: Time step to ve saved instead of the full simulation.
 """
 function save_simulation_hdf5(epi_params::Epidemic_Params, 
                               population::Population_Params,
@@ -261,24 +276,49 @@ function save_simulation_hdf5(epi_params::Epidemic_Params,
     compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
     if export_time_t > 0
         h5open(output_fname, "w") do file
-            write(file, "compartments", compartments[:,:,export_time_t,:,:])
+            write(file, "data", compartments[:,:,export_time_t,:,:])
         end
     else
         h5open(output_fname, "w") do file
-            write(file, "compartments", compartments[:,:,:,:,:])
+            write(file, "data", compartments[:,:,:,:,:])
         end
     end
 end
 
 
-
-function save_simulation_netCDF(epi_params::Epidemic_Params, 
+"""
+save_simulation_netCDF(epi_params::Epidemic_Params, 
                                     population::Population_Params,
                                     output_fname::String;
                                     G_coords= nothing,
                                     M_coords = nothing,
                                     T_coords = nothing
                                     )
+
+    Save the full simulations.
+
+    # Arguments
+
+    - `epi_params::Epidemic_Params`: Structure that contains all epidemic parameters
+    and the epidemic spreading information.
+    - `population::Population_Params`: Structure that contains all the parameters
+    related with the population.
+    - `output_fname::String`: Output filename.
+
+    ## Optional
+    - `G_coords = nothing`: Array::{String} of size G containing the labels for age strata
+    - `M_coords = nothing`: Array::{String} of size M containing the labels for the patches
+    - `T_coords = nothing`: Array::{String} of size t containing the labels for the time (dates)
+    - `export_time_t = -1`: Time step to ve saved instead of the full simulation.
+"""
+function save_simulation_netCDF( epi_params::Epidemic_Params, 
+                                 population::Population_Params,
+                                 output_fname::String;
+                                 G_coords = nothing,
+                                 M_coords = nothing,
+                                 T_coords = nothing,
+                                 V_coords = ["NV", "V"]
+                                )
     G = population.G
     M = population.M
     T = epi_params.T
@@ -296,7 +336,7 @@ function save_simulation_netCDF(epi_params::Epidemic_Params,
         T_coords = collect(1:T) 
     end
 
-    V_coords = ["NV", "V"]
+    
 
     compartments = zeros(Float64, G, M, T, V, S);
     compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
