@@ -187,15 +187,8 @@ tᶜs = Int64.(npi_params_dict["tᶜs"])
 <<<<<<< HEAD
 # Array of premeabilities of confined households
 ϕs = Float64.(npi_params_dict["ϕs"])
-=======
-# Array of permeabilities of confined households
-ϕs = Float64.(npiparams_dict["ϕs"])
->>>>>>> 9f0a1076e0bbb447009eec8f58ba91959f448d8d
 # Array of social distancing measures
 δs = Float64.(npi_params_dict["δs"])
-
-
-
 
 
 
