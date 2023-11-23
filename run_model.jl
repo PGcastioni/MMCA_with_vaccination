@@ -183,8 +183,6 @@ tᶜs = Int64.(npi_params_dict["tᶜs"])
 # Array of level of confinement
 # κ₀s = κ₀_df.reduction[:]
 κ₀s = Float64.(npi_params_dict["κ₀s"])
-
-<<<<<<< HEAD
 # Array of premeabilities of confined households
 ϕs = Float64.(npi_params_dict["ϕs"])
 # Array of social distancing measures
