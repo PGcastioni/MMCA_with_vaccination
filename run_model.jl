@@ -167,18 +167,16 @@ G = length(G_coords)
 # Num. of vaccination statuses Vaccinated/Non-vaccinated
 V = length(epi_params_dict["kᵥ"])
 
-##################################################
-####### INITIALIZATION OF THE EPIDEMICS ##########
-##################################################
+####################################################
+#####   INITIALIZATION OF DATA Structures   ########
+####################################################
 
 ## POPULATION PARAMETERS
-population = init_pop_param_struct(G, M, G_coords, 
-                                   pop_params_dict, 
-                                   metapop_df, network_df)
-## EPIDEMIC PARAMETERS 
-epi_params = init_epi_parameters_struct(G, M, G_coords, epi_params_dict)
-
+population       = init_pop_param_struct(G, M, G_coords, pop_params_dict, metapop_df, network_df)
 total_population = sum(population.nᵢᵍ)
+
+## EPIDEMIC PARAMETERS 
+epi_params       = init_epi_parameters_struct(G, M, G_coords, epi_params_dict)
 
 ##################################################
 
@@ -216,42 +214,30 @@ tᵛs = [start_vacc, end_vacc, T]
 # Containment measures
 #########################################################
 
-""" 
-# syncronize containment measures with simulation
-κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
-
-# Timesteps when the containment measures will be applied
-tᶜs = κ₀_df.time[:]
-
-# Array of level of confinement
-κ₀s = κ₀_df.reduction[:]
-
-# Array of premeabilities of confined households
-ϕs = ones(Float64, length(tᶜs))
-
-# Array of social distancing measures
-δs = ones(Float64, length(tᶜs))
-"""
-
-# Mobility reduction
-κ₀_df = CSV.read(joinpath(data_path, config["data"]["kappa0_filename"]), DataFrame);
-
-# syncronize containment measures with simulation
-κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
-
-# Array of level of confinement
-# κ₀s = κ₀_df.reduction[:]
-κ₀s = Float64.(npi_params_dict["κ₀s"])
-
-
-# Timesteps when the containment measures will be applied
-tᶜs = Int64.(npi_params_dict["tᶜs"])
-
-# Array of premeabilities of confined households
-ϕs = Float64.(npi_params_dict["ϕs"])
-
-# Array of social distancing measures
-δs = Float64.(npi_params_dict["δs"])
+# Daily Mobility reduction
+kappa0_filename = get(data_dict, "kappa0_filename", nothing)
+if !isnothing(kappa0_filename)
+    κ₀_df = CSV.read(joinpath(data_path, data_dict["kappa0_filename"]), DataFrame);
+    # syncronize containment measures with simulation
+    κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
+    # Timesteps when the containment measures will be applied
+    tᶜs = κ₀_df.time[:]
+    # Array of level of confinement
+    κ₀s = κ₀_df.reduction[:]
+    # Array of premeabilities of confined households
+    ϕs = ones(Float64, length(tᶜs))
+    # Array of social distancing measures
+    δs = ones(Float64, length(tᶜs))
+else
+    # Timesteps when the containment measures will be applied
+    tᶜs = Int64.(npi_params_dict["tᶜs"])
+    # Array of level of confinement
+    κ₀s = Float64.(npi_params_dict["κ₀s"])
+    # Array of premeabilities of confined households
+    ϕs = Float64.(npi_params_dict["ϕs"])
+    # Array of social distancing measures
+    δs = Float64.(npi_params_dict["δs"])
+end
 
 
 # vac_parms = Vaccination_Params(tᵛs, ϵᵍs)
