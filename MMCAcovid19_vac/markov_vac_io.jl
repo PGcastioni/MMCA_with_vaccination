@@ -107,7 +107,6 @@ function parse_commandline()
     return parse_args(s)
 end
 
-
 function update_config!(config, cmd_line_args)
     # Define dictionary containing epidemic parameters
     if !haskey(config, "epidemic_params")
@@ -336,7 +335,6 @@ function save_simulation_netCDF( epi_params::Epidemic_Params,
         T_coords = collect(1:T) 
     end
 
-    
 
     compartments = zeros(Float64, G, M, T, V, S);
     compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
