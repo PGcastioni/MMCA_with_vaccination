@@ -70,57 +70,52 @@ instance_path = args["instance-folder"]
 config = JSON.parsefile(config_fname);
 update_config!(config, args)
 
-# Output simulation
+simulation_dict = config["simulation"]
+data_dict       = config["data"]
+epi_params_dict = config["epidemic_params"]
+pop_params_dict = config["population_params"]
+vac_params_dict = config["vaccination"]
+npi_params_dict = config["NPI"]
+
+#########################
+# Simulation output 
+#########################
 output_path = joinpath(instance_path, "output")
 if !isdir(output_path)
     println("Creating output folder: $output_path")
     mkpath(output_path)
 end
 
-# Reading simulation start and end dates
-first_day = Date(config["simulation"]["first_day_simulation"])
-last_day  = Date(config["simulation"]["last_day_simulation"])
-# Converting dates to time steps
-T = (last_day - first_day).value + 1
+output_format = simulation_dict["output_format"]
+save_full_output = get(simulation_dict, "save_full_output", false)
+save_time_step   = get(simulation_dict, "save_time_step", nothing)
 
-T_coords = string.(collect(first_day:last_day))
-
-A0_instance_filename = get(config["simulation"], "A0_filename", nothing)
+#########################
+# Initial Condition
+#########################
+A0_instance_filename = get(data_dict, "initial_condition", nothing)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
-initial_compartments_path = get(config["simulation"], "initial_compartments", nothing)
 
-if A0_instance_filename !== nothing && initial_compartments_path !== nothing
+if isnothing(A0_instance_filename)
     println("ERROR!!!")
 end
 
 
-#########################
-# Simulation output 
-#########################
-
-export_compartments_full = get(config["simulation"], "export_compartments_full", false)
-export_compartments_time_t = get(config["simulation"], "export_compartments_time_t", nothing)
-
-println("first_day_simulation = ", first_day)
-println("last_day_simulation = ", last_day)
-println("export_compartments_full = ", export_compartments_full)
-println("export_compartments_time_t = ", export_compartments_time_t)
-println("initial_compartments = ", initial_compartments_path)
 
 ########################################
 ####### VARIABLES INITIALIZATION #######
 ########################################
 
-data_dict        = config["data"]
-epi_params_dict  = config["epidemic_params"]
-pop_params_dict  = config["population_params"]
-vac_params_dict  = config["vaccination"]
-npi_params_dict  = config["NPI"]
-
-# Population info
+# Reading simulation start and end dates
+first_day = Date(simulation_dict["first_day_simulation"])
+last_day  = Date(simulation_dict["last_day_simulation"])
+# Converting dates to time steps
+T = (last_day - first_day).value + 1
+# Array with time coordinates (dates)
+T_coords  = string.(collect(first_day:last_day))
 
 # Loading metapopulation patches info (surface, label, population by age)
-metapop_data_filename    = joinpath(data_path, data_dict["metapopulation_data_filename"])
+metapop_data_filename = joinpath(data_path, data_dict["metapopulation_data_filename"])
 metapop_df = CSV.read(metapop_data_filename, DataFrame)
 
 # Loading mobility network
@@ -149,8 +144,24 @@ population = init_pop_param_struct(G, M, G_coords,
 ## EPIDEMIC PARAMETERS 
 epi_params = init_epi_parameters_struct(G, M, G_coords, epi_params_dict)
 
-
 total_population = sum(population.nᵢᵍ)
+
+##################################################
+
+println("- Initializing MMCA epidemic simulations")
+println("\t- first_day_simulation = ", first_day)
+println("\t- last_day_simulation = ", last_day)
+println("\t- G (agent class) = ", G)
+println("\t- M (n. of metapopulations) = ", M)
+println("\t- T (simulation steps) = ", T)
+println("\t- V (vaccination states) = ", V)
+println("\t- N. of epi compartments = ", epi_params.NumComps)
+
+println("\t- Initial file = ", initial_compartments_path)
+println("\t- Save full output = ", save_full_output)
+if save_time_step !== nothing
+    println("\t- Save time step at t=", save_time_step)
+end
 
 #########################################################
 # Vaccination parameters
@@ -171,40 +182,43 @@ tᵛs = [start_vacc, end_vacc, T]
 # Containment measures
 #########################################################
 
+""" 
+# syncronize containment measures with simulation
+κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
+
+# Timesteps when the containment measures will be applied
+tᶜs = κ₀_df.time[:]
+
+# Array of level of confinement
+κ₀s = κ₀_df.reduction[:]
+
+# Array of premeabilities of confined households
+ϕs = ones(Float64, length(tᶜs))
+
+# Array of social distancing measures
+δs = ones(Float64, length(tᶜs))
+"""
+
 # Mobility reduction
 κ₀_df = CSV.read(joinpath(data_path, config["data"]["kappa0_filename"]), DataFrame);
 
 # syncronize containment measures with simulation
 κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
 
-# Timesteps when the containment measures will be applied
-tᶜs = Int64.(npi_params_dict["tᶜs"])
-
 # Array of level of confinement
 # κ₀s = κ₀_df.reduction[:]
 κ₀s = Float64.(npi_params_dict["κ₀s"])
 
-<<<<<<< HEAD
+
+# Timesteps when the containment measures will be applied
+tᶜs = Int64.(npi_params_dict["tᶜs"])
+
 # Array of premeabilities of confined households
 ϕs = Float64.(npi_params_dict["ϕs"])
-=======
-# Array of permeabilities of confined households
-ϕs = Float64.(npiparams_dict["ϕs"])
->>>>>>> 9f0a1076e0bbb447009eec8f58ba91959f448d8d
+
 # Array of social distancing measures
 δs = Float64.(npi_params_dict["δs"])
 
-
-
-
-
-
-
-println("M = ", M)
-println("G = ", G)
-println("T = ", T)
-println("V = ", V)
-println("N. of epi compartments = ", epi_params.NumComps)
 
 # vac_parms = Vaccination_Params(tᵛs, ϵᵍs)
 # npi_params = NPI_Params(tᶜs, κ₀s, ϕs, δs)
@@ -220,25 +234,6 @@ if initial_compartments_path !== nothing
     # set the full initial condition o a user defined
     set_compartments!(epi_params, initial_compartments)
 else
-    Sᵛ₀ = zeros(Float64, G, M)
-    E₀  = zeros(Float64, G, M)
-    A₀  = zeros(Float64, G, M)
-    I₀  = zeros(Float64, G, M)
-    H₀  = zeros(Float64, G, M)
-    R₀  = zeros(Float64, G, M)
-    if A0_instance_filename !== nothing
-        # Initial number of infectious asymptomatic individuals
-        # use seeds to initialize simulations
-        conditions₀ = CSV.read(A0_instance_filename, DataFrame)        
-        A₀[1, Int.(conditions₀[:,"idx"])] .= 0.12 .* conditions₀[:,"seed"]
-        A₀[2, Int.(conditions₀[:,"idx"])] .= 0.16 .* conditions₀[:,"seed"]
-        A₀[3, Int.(conditions₀[:,"idx"])] .= 0.72 .* conditions₀[:,"seed"]    
-    else
-        # Initial set custom number of infected
-        E₀ = nᵢᵍ / total_population * 1000
-        A₀ = nᵢᵍ / total_population * 1000
-        I₀ = nᵢᵍ / total_population * 1000    
-    end
     set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
 end
 
@@ -252,16 +247,21 @@ run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, 
 ################## STORING THE RESULTS #######################
 ##############################################################
 
-if export_compartments_full
-    filename = joinpath(output_path, "compartments_full.h5")
-    println("Storing full simulation output")
-    println("\t- filename: $(filename)")
-    save_simulation_hdf5(epi_params, population, filename)
-    filename = joinpath(output_path, "compartments_full.nc")
-    save_simulation_netCDF(epi_params, population, filename;G_coords=G_coords, M_coords=M_coords, T_coords=T_coords)
+
+if save_full_output
+    println("Storing full simulation output in $(output_format)")
+    if output_format == "netcdf"
+        filename = joinpath(output_path, "compartments_full.nc")
+        println("\t- Output filename: $(filename)")
+        save_simulation_netCDF(epi_params, population, filename;G_coords=G_coords, M_coords=M_coords, T_coords=T_coords)
+    elseif output_format == "hdf5"
+        filename = joinpath(output_path, "compartments_full.h5")
+        println("\t- Output filename: $(filename)")
+        save_simulation_hdf5(epi_params, population, filename)
+    end
 end
 
-if export_compartments_time_t !== nothing
+if save_time_step !== nothing
     export_compartments_date = first_day + Day(export_compartments_time_t - 1)
     filename = joinpath(output_path, "compartments_t_$(export_compartments_date).h5")
     println("Storing compartments at single date $(export_compartments_date):")
