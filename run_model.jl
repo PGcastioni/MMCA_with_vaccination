@@ -61,34 +61,34 @@ function parse_commandline()
     return parse_args(s)
 end
 
-function set_compartments!(epi_params, initial_compartments)
-    @assert size(initial_compartments) == (size(epi_params.ρˢᵍᵥ)[1], size(epi_params.ρˢᵍᵥ)[2], size(epi_params.ρˢᵍᵥ)[4], 10)
-    total_population = sum(initial_compartments, dims=(3))[:,:,1]
+function set_compartments!(epi_params, population, initial_compartments)
     
     # Index of the initial condition
-    T0 = 1
+    t₀ = 1
     
-    epi_params.ρˢᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 1] ./ total_population
-    epi_params.ρᴱᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 2] ./ total_population
-    epi_params.ρᴬᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 3] ./ total_population
-    epi_params.ρᴵᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 4] ./ total_population
-    epi_params.ρᴾᴴᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 5] ./ total_population
-    epi_params.ρᴾᴰᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 6] ./ total_population
-    epi_params.ρᴴᴿᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 7] ./ total_population
-    epi_params.ρᴴᴰᵍᵥ[:,:,T0,:] .= initial_compartments[:, :, T0, :, 8] ./ total_population
-    epi_params.ρᴿᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 9] ./ total_population
-    epi_params.ρᴰᵍᵥ[:,:,T0,:]  .= initial_compartments[:, :, T0, :, 10] ./ total_population
+    for i in 1:2
+        epi_params.ρˢᵍᵥ[:,:,t₀,i]  .= initial_compartments[:, :, i, 1] ./ population.nᵢᵍ
+        epi_params.ρᴱᵍᵥ[:,:,t₀,i]  .= initial_compartments[:, :, i, 2] ./ population.nᵢᵍ
+        epi_params.ρᴬᵍᵥ[:,:,t₀,i]  .= initial_compartments[:, :, i, 3] ./ population.nᵢᵍ
+        epi_params.ρᴵᵍᵥ[:,:,t₀,i]  .= initial_compartments[:, :, i, 4] ./ population.nᵢᵍ
+        epi_params.ρᴾᴴᵍᵥ[:,:,t₀,i] .= initial_compartments[:, :, i, 5] ./ population.nᵢᵍ
+        epi_params.ρᴾᴰᵍᵥ[:,:,t₀,i] .= initial_compartments[:, :, i, 6] ./ population.nᵢᵍ
+        epi_params.ρᴴᴿᵍᵥ[:,:,t₀,i] .= initial_compartments[:, :, i, 7] ./ population.nᵢᵍ
+        epi_params.ρᴴᴰᵍᵥ[:,:,t₀,i] .= initial_compartments[:, :, i, 8] ./ population.nᵢᵍ
+        epi_params.ρᴿᵍᵥ[:,:,t₀,i]  .= initial_compartments[:, :, i, 9] ./ population.nᵢᵍ
+        epi_params.ρᴰᵍᵥ[:,:,t₀,i]  .= initial_compartments[:, :, i, 10] ./ population.nᵢᵍ
+    end
 
-    epi_params.ρˢᵍᵥ[isnan.(epi_params.ρˢᵍᵥ)] .= 0
-    epi_params.ρᴱᵍᵥ[isnan.(epi_params.ρᴱᵍᵥ)] .= 0
-    epi_params.ρᴬᵍᵥ[isnan.(epi_params.ρᴬᵍᵥ)] .= 0
-    epi_params.ρᴵᵍᵥ[isnan.(epi_params.ρᴵᵍᵥ)] .= 0
+    epi_params.ρˢᵍᵥ[isnan.(epi_params.ρˢᵍᵥ)]   .= 0
+    epi_params.ρᴱᵍᵥ[isnan.(epi_params.ρᴱᵍᵥ)]   .= 0
+    epi_params.ρᴬᵍᵥ[isnan.(epi_params.ρᴬᵍᵥ)]   .= 0
+    epi_params.ρᴵᵍᵥ[isnan.(epi_params.ρᴵᵍᵥ)]   .= 0
     epi_params.ρᴾᴴᵍᵥ[isnan.(epi_params.ρᴾᴴᵍᵥ)] .= 0
     epi_params.ρᴾᴰᵍᵥ[isnan.(epi_params.ρᴾᴰᵍᵥ)] .= 0
     epi_params.ρᴴᴿᵍᵥ[isnan.(epi_params.ρᴴᴿᵍᵥ)] .= 0
     epi_params.ρᴴᴰᵍᵥ[isnan.(epi_params.ρᴴᴰᵍᵥ)] .= 0
-    epi_params.ρᴿᵍᵥ[isnan.(epi_params.ρᴿᵍᵥ)] .= 0
-    epi_params.ρᴰᵍᵥ[isnan.(epi_params.ρᴰᵍᵥ)] .= 0
+    epi_params.ρᴿᵍᵥ[isnan.(epi_params.ρᴿᵍᵥ)]   .= 0
+    epi_params.ρᴰᵍᵥ[isnan.(epi_params.ρᴰᵍᵥ)]   .= 0
 end
 
 ###########################################
@@ -120,21 +120,19 @@ if !isdir(output_path)
     mkpath(output_path)
 end
 
-output_format = simulation_dict["output_format"]
+output_format    = simulation_dict["output_format"]
 save_full_output = get(simulation_dict, "save_full_output", false)
 save_time_step   = get(simulation_dict, "save_time_step", nothing)
+init_format      = get(simulation_dict, "init_format", "netcdf")
 
 #########################
 # Initial Condition
 #########################
-A0_instance_filename = get(data_dict, "initial_condition", nothing)
-A0_instance_filename = joinpath(instance_path, A0_instance_filename)
+initial_compartments_path = get(data_dict, "initial_condition_filename", nothing)
 
-if isnothing(A0_instance_filename)
-    println("ERROR!!!")
+if isnothing(initial_compartments_path)
+    println("ERROR. Missing initial condition file")
 end
-
-
 
 ########################################
 ####### VARIABLES INITIALIZATION #######
@@ -176,7 +174,7 @@ population       = init_pop_param_struct(G, M, G_coords, pop_params_dict, metapo
 total_population = sum(population.nᵢᵍ)
 
 ## EPIDEMIC PARAMETERS 
-epi_params       = init_epi_parameters_struct(G, M, G_coords, epi_params_dict)
+epi_params       = init_epi_parameters_struct(G, M, T, G_coords, epi_params_dict)
 
 ##################################################
 
@@ -189,7 +187,7 @@ println("\t- T (simulation steps) = ", T)
 println("\t- V (vaccination states) = ", V)
 println("\t- N. of epi compartments = ", epi_params.NumComps)
 
-println("\t- Initial file = ", initial_compartments_path)
+# println("\t- Initial file = ", initial_compartments_path)
 println("\t- Save full output = ", save_full_output)
 if save_time_step !== nothing
     println("\t- Save time step at t=", save_time_step)
@@ -248,13 +246,15 @@ end
 # Load initial full conditions
 if initial_compartments_path !== nothing
     # use initial compartments matrix to initialize simulations
-    initial_compartments = h5open(initial_compartments_path, "r") do file
-        read(file, "compartments")
+    if init_format == "netcdf"
+        initial_compartments = ncread(initial_compartments_path, "data")
+    elseif init_format == "hdf5"
+        initial_compartments = h5open(initial_compartments_path, "r") do file
+            read(file, "data")
+        end
     end
-    # set the full initial condition o a user defined
-    set_compartments!(epi_params, initial_compartments)
-else
-    set_initial_conditions!(epi_params, population, Sᵛ₀, E₀, A₀, I₀, H₀, R₀)
+    @assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
+    set_compartments!(epi_params, population, initial_compartments)
 end
 
 ########################################################
