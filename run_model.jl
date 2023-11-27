@@ -127,7 +127,8 @@ save_time_step   = get(simulation_dict, "save_time_step", nothing)
 #########################
 # Initial Condition
 #########################
-A0_instance_filename = get(data_dict, "initial_condition", nothing)
+A0_instance_filename = get(data_dict, "initial_condition_filename", nothing)
+println(A0_instance_filename)
 A0_instance_filename = joinpath(instance_path, A0_instance_filename)
 
 if isnothing(A0_instance_filename)
