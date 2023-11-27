@@ -143,7 +143,7 @@ function init_pop_param_struct(G::Int64, M::Int64,
     return Population_Params(G, M, nᵢᵍ, kᵍ, kᵍ_h, kᵍ_w, C, pᵍ, edgelist, Rᵢⱼ, sᵢ, ξ, σ)
 end
 
-function init_epi_parameters_struct(G::Int64, M::Int64,
+function init_epi_parameters_struct(G::Int64, M::Int64, T::Int64,
                                     G_coords::Array{String, 1}, 
                                     epi_params_dict::Dict)
 
