@@ -130,11 +130,11 @@ end
                     ηᵍ::Array{Float64, 1},
                     αᵍ::Array{Float64, 1},
                     μᵍ::Array{Float64, 1},
-                    θᵍ::Array{Float64, 1},
-                    γᵍ::Array{Float64, 1},
+                    θᵍ::Array{Float64, 2},
+                    γᵍ::Array{Float64, 2},
                     ζᵍ::Array{Float64, 1},
                     λᵍ::Array{Float64, 1},
-                    ωᵍ::Array{Float64, 1},
+                    ωᵍ::Array{Float64, 2},
                     ψᵍ::Array{Float64, 1},
                     χᵍ::Array{Float64, 1},
                     Λ::Float64,
@@ -156,15 +156,15 @@ end
   rates for each strata.
 - `μᵍ::Array{Float64, 1}`: Vector of size ``G`` with infectious rates for each
   strata.
-- `θᵍ::Array{Float64, 1}`: Vector of size ``G`` with direct death probabilities
+- `θᵍ::Array{Float64, 2}`: Matrix of size ``GxV`` with direct death probabilities
   for each strata.
-- `γᵍ::Array{Float64, 1}`: Vector of size ``G`` with ICU probabilities for each
+- `γᵍ::Array{Float64, 2}`: Matrix of size ``GxV`` with ICU probabilities for each
   strata.
 - `ζᵍ::Array{Float64, 1}`: Vector of size ``G`` with pre-deceased rates for
   each strata.
 - `λᵍ::Array{Float64, 1}`: Vector of size ``G`` with pre-hospitalized in ICU
   rates for each strata.
-- `ωᵍ::Array{Float64, 1}`: Vector of size ``G`` with fatality probabilities in
+- `ωᵍ::Array{Float64, 2}`: Matrix of size ``GxV`` with fatality probabilities in
   ICU for each strata.
 - `ψᵍ::Array{Float64, 1}`: Vector of size ``G`` with death rates for each
   strata.
@@ -172,8 +172,10 @@ end
   each strata.
 - `Λ::Float64`: Probability of losing the vaccine-acquired immunity
 - `Γ::Float64`: Probability of losing the disease-acquired immunity
-- `rᵥ::Array{Float64, 1}`: Vaccine efficacy in preventing infections for each vaccination status.
-- `kᵥ::Array{Float64, 1}`: Vaccine efficacy in preventing tranmission for each vaccination status.
+- `rᵥ::Array{Float64, 1}`: Vector of size ``V``. Vaccine efficacy in preventing infections 
+   for each vaccination status.
+- `kᵥ::Array{Float64, 1}`: Vector of size ``V``. Vaccine efficacy in preventing tranmission 
+   for each vaccination status.
 - `G::Int64`: Number of strata.
 - `M::Int64`: Number of patches.
 - `T::Int64`: Number of epidemic timesteps.
