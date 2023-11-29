@@ -1,7 +1,7 @@
 {
 	"simulation": {
-		"first_day_simulation": "2020-02-20",
-		"last_day_simulation": "2020-05-10",
+		"first_day_simulation": "2020-02-15",
+		"last_day_simulation": "2020-05-30",
 		"save_full_output": true,
 		"save_time_step": null,
 		"output_folder": "output",
