@@ -230,9 +230,13 @@ tᵛs = [start_vacc, end_vacc, T]
 
 # Daily Mobility reduction
 kappa0_filename = get(data_dict, "kappa0_filename", nothing)
+
 if !isnothing(kappa0_filename)
-    κ₀_df = CSV.read(joinpath(data_path, data_dict["kappa0_filename"]), DataFrame);
+    kappa0_filename = joinpath(data_path, kappa0_filename)
+    @info "- Loading κ₀ time series from $(kappa0_filename)"
+    κ₀_df = CSV.read(kappa0_filename, DataFrame);
     # syncronize containment measures with simulation
+    @info "- Synchronizing to dates"
     κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
     # Timesteps when the containment measures will be applied
     tᶜs = κ₀_df.time[:]
@@ -268,6 +272,8 @@ if initial_compartments_path !== nothing
         initial_compartments = h5open(initial_compartments_path, "r") do file
             read(file, "data")
         end
+    else
+        @error "init_format must be one of : netcdf/hdf5"
     end
     @assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
     set_compartments!(epi_params, population, initial_compartments)
