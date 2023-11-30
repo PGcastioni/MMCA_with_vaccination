@@ -194,19 +194,19 @@ epi_params       = init_epi_parameters_struct(G, M, T, G_coords, epi_params_dict
 
 ##################################################
 
-println("- Initializing MMCA epidemic simulations")
-println("\t- first_day_simulation = ", first_day)
-println("\t- last_day_simulation = ", last_day)
-println("\t- G (agent class) = ", G)
-println("\t- M (n. of metapopulations) = ", M)
-println("\t- T (simulation steps) = ", T)
-println("\t- V (vaccination states) = ", V)
-println("\t- N. of epi compartments = ", epi_params.NumComps)
+@info "- Initializing MMCA epidemic simulations"
+@info "\t- first_day_simulation = "  first_day
+@info "\t- last_day_simulation = " last_day
+@info "\t- G (agent class) = " G
+@info "\t- M (n. of metapopulations) = "  M
+@info "\t- T (simulation steps) = " T
+@info "\t- V (vaccination states) = " V
+@info "\t- N. of epi compartments = " epi_params.NumComps
 
 # println("\t- Initial file = ", initial_compartments_path)
-println("\t- Save full output = ", save_full_output)
+@info "\t- Save full output = " save_full_output
 if save_time_step !== nothing
-    println("\t- Save time step at t=", save_time_step)
+    @info "\t- Save time step at t=" save_time_step
 end
 
 #########################################################
@@ -306,14 +306,14 @@ run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, 
 
 
 if save_full_output
-    println("Storing full simulation output in $(output_format)")
+    @info "Storing full simulation output in $(output_format)"
     if output_format == "netcdf"
         filename = joinpath(output_path, "compartments_full.nc")
-        println("\t- Output filename: $(filename)")
+        @info "\t- Output filename: $(filename)"
         save_simulation_netCDF(epi_params, population, filename;G_coords=G_coords, M_coords=M_coords, T_coords=T_coords)
     elseif output_format == "hdf5"
         filename = joinpath(output_path, "compartments_full.h5")
-        println("\t- Output filename: $(filename)")
+        @info "\t- Output filename: $(filename)"
         save_simulation_hdf5(epi_params, population, filename)
     end
 end
@@ -321,9 +321,9 @@ end
 if save_time_step !== nothing
     export_compartments_date = first_day + Day(export_compartments_time_t - 1)
     filename = joinpath(output_path, "compartments_t_$(export_compartments_date).h5")
-    println("Storing compartments at single date $(export_compartments_date):")
-    println("\t- Simulation step: $(export_compartments_time_t)")
-    println("\t- filename: $(filename)")
+    @info "Storing compartments at single date $(export_compartments_date):"
+    @info "\t- Simulation step: $(export_compartments_time_t)"
+    @info "\t- filename: $(filename)"
     save_simulation_hdf5(epi_params, population, filename; 
                          export_time_t = export_compartments_time_t)
 end
