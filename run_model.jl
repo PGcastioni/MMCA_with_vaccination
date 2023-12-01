@@ -275,9 +275,24 @@ if initial_compartments_path !== nothing
     else
         @error "init_format must be one of : netcdf/hdf5"
     end
-    @assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
-    set_compartments!(epi_params, population, initial_compartments)
 end
+
+
+τ_inc    = 5.2
+scale_ea = 0.5775
+τᵢ       = 3.9131
+
+# epi_params.ηᵍ .= 1.0/(τ_inc * (1.0 - scale_ea))
+# epi_params.αᵍ .= [1.0/(τᵢ - 1 + τ_inc * scale_ea),
+#                   1.0/(τ_inc * scale_ea),
+#                   1.0/(τ_inc * scale_ea)]
+# epi_params.μᵍ .= [1.0, 1.0/τᵢ, 1.0/τᵢ]
+
+scale₀   = 0.8
+initial_compartments[:, :, :, 2] .= initial_compartments[:, :, :, 2] * scale₀
+
+@assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
+set_compartments!(epi_params, population, initial_compartments)
 
 ########################################################
 ################ RUN THE SIMULATION ####################
