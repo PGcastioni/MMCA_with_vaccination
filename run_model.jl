@@ -147,7 +147,7 @@ initial_compartments_path = get(data_dict, "initial_condition_filename", nothing
 
 
 if isnothing(initial_compartments_path)
-    println("ERROR. Missing initial condition file")
+    @error "ERROR. Missing initial condition file"
 end
 
 ########################################
