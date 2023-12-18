@@ -1,3 +1,5 @@
+using Logging
+
 """
     update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                  Sᵢᵍᵥ::Array{Float64, 3},
@@ -110,16 +112,18 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
     
     
     # Compute vaccine priority distribution among ages and patches
+    
     ϵᵢᵍ = optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
                                            ρˢᵍᵥ::Array{Float64, 4},
                                            nᵢᵍ::Array{Float64, 2},
                                            t::Int64)
-                    
+            
+    
     # Newly vaccinated people as a fraction of the subpopulation
     new_vaccinated = zeros(Float64, G, M)
     new_vaccinated .= ϵᵢᵍ ./ nᵢᵍ
     new_vaccinated[isnan.(new_vaccinated)] .= 0.
-    
+    @info "Total vaccination", sum(new_vaccinated)
 
     # Update probabilities
     @inbounds for i in 1:M
@@ -462,6 +466,11 @@ function optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
     
     Nᵥ = sum(ϵᵍ) # Total number of vaccines
     (G, M) = size(nᵢᵍ)
+
+    if Nᵥ == 0
+        @info "No vaccination"
+        return zeros(G, M)
+    end
     
     only_positive = all(ρˢᵍᵥ[:, :, t, 1] .>= 0.0) & 
             all(ρˢᵍᵥ[:, :, t, 2] .>= 0.0) &
