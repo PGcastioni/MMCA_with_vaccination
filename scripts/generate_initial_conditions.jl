@@ -33,8 +33,8 @@ function parse_commandline()
             help = "output folder (to store intial condition)"
             default = ""
         "--seed-fname", "-s"
-            help = "finle name with initiall seeds)"
-            default = nothing
+            help = "file name with initiall seeds)"
+            required = true
         "--init-type", "-t"
             help = "Initialization option (A0 seeds / uniform)"
             default = "PG"
@@ -94,7 +94,8 @@ function main()
     conditions₀ = CSV.read(seeds_fname, DataFrame);
 
     M_idx  = Int.(conditions₀[:,"idx"])
-    conditions₀ = Int64.(round.(conditions₀[:,"seed"]))
+    #conditions₀ = Int64.(round.(conditions₀[:,"seed"]))
+    conditions₀ = Float64.(conditions₀[:,"seed"])
     
     seeds_age_ratio = pop_params_dict["seeds_age_ratio"]
     
