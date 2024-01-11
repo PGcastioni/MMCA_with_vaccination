@@ -288,8 +288,9 @@ scale_ea = 0.5775
 #                   1.0/(τ_inc * scale_ea)]
 # epi_params.μᵍ .= [1.0, 1.0/τᵢ, 1.0/τᵢ]
 
-scale₀   = 0.8
-initial_compartments[:, :, :, 2] .= initial_compartments[:, :, :, 2] * scale₀
+#scale₀   = 0.8
+scale₀   = 1
+initial_compartments[:, :, :, 3] .= initial_compartments[:, :, :, 3] * scale₀
 
 @assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
 set_compartments!(epi_params, population, initial_compartments)
