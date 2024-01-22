@@ -140,7 +140,6 @@ save_full_output = get(simulation_dict, "save_full_output", false)
 save_time_step   = get(simulation_dict, "save_time_step", nothing)
 init_format      = get(simulation_dict, "init_format", "netcdf")
 initial_compartments_path = get(data_dict, "initial_condition_filename", nothing)
-println(initial_compartments_path)
 #########################
 # Initial Condition
 #########################
