@@ -232,6 +232,28 @@ function Epidemic_Params(βᴵ::Float64,
 end
 
 
+
+function update_epidemic_params!(epi_params::Epidemic_Params, data_dict::Dict{String, Any})
+  # has_key(key) = haskey(data_dict, key) && !(typeof(getfield(person, Symbol(key))) <: Union{Missing, Nothing})
+  epi_params.βᴵ = has_key("βᴵ") ? data_dict["βᴵ"] : epi_params.βᴵ
+  epi_params.βᴬ = has_key("βᴬ") ? data_dict["βᴬ"] : epi_params.βᴬ
+  epi_params.ηᵍ = has_key("ηᵍ") ? data_dict["ηᵍ"] : epi_params.ηᵍ
+  epi_params.αᵍ = has_key("αᵍ") ? data_dict["αᵍ"] : epi_params.αᵍ
+  epi_params.μᵍ = has_key("μᵍ") ? data_dict["μᵍ"] : epi_params.μᵍ
+  epi_params.θᵍ = has_key("θᵍ") ? data_dict["θᵍ"] : epi_params.θᵍ
+  epi_params.γᵍ = has_key("γᵍ") ? data_dict["γᵍ"] : epi_params.γᵍ
+  epi_params.ζᵍ = has_key("ζᵍ") ? data_dict["ζᵍ"] : epi_params.ζᵍ
+  epi_params.λᵍ = has_key("λᵍ") ? data_dict["λᵍ"] : epi_params.λᵍ
+  epi_params.ωᵍ = has_key("ωᵍ") ? data_dict["ωᵍ"] : epi_params.ωᵍ
+  epi_params.ψᵍ = has_key("ψᵍ") ? data_dict["ψᵍ"] : epi_params.ψᵍ
+  epi_params.χᵍ = has_key("χᵍ") ? data_dict["χᵍ"] : epi_params.χᵍ
+  epi_params.Λ = has_key("Λ") ? data_dict["Λ"] : epi_params.Λ
+  epi_params.Γ = has_key("Γ") ? data_dict["Γ"] : epi_params.Γ
+  epi_params.rᵥ = has_key("rᵥ") ? data_dict["rᵥ"] : epi_params.rᵥ
+  epi_params.kᵥ = has_key("kᵥ") ? data_dict["kᵥ"] : epi_params.kᵥ
+end
+
+
 """
     reset_epidemic_params!(epi_params::Epidemic_Params)
 

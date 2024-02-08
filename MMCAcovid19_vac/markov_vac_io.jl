@@ -8,6 +8,7 @@ include("markov_vac_aux.jl")
 function create_default_epi_params()
     epiparams_dict = Dict()
     epiparams_dict["scale_β"] = 0.51
+    epiparams_dict["βᴬ"] = 0.046053
     epiparams_dict["βᴵ"] = 0.0903
     epiparams_dict["ηᵍ"] = [0.2747252747252747, 0.2747252747252747, 0.2747252747252747]
     epiparams_dict["αᵍ"] = [0.26595744680851063, 0.641025641025641, 0.641025641025641]
@@ -98,14 +99,15 @@ function update_config!(config, cmd_line_args)
     if cmd_line_args["end-date"] !== nothing
         config["simulation"]["last_day_simulation"] = cmd_line_args["end-date"]
     end
-    if cmd_line_args["initial-compartments"] !== nothing
-        config["simulation"]["initial_compartments"] = cmd_line_args["initial-compartments"]
-    end
     if cmd_line_args["export-compartments-time-t"] !== nothing
         config["simulation"]["export_compartments_time_t"] = cmd_line_args["export-compartments-time-t"]
     end
     if cmd_line_args["export-compartments-full"] == true
         config["simulation"]["export_compartments_full"] = true
+    end
+
+    if cmd_line_args["initial-conditions"] !== nothing
+        config["data"]["initial-conditions"] = cmd_line_args["initial-conditions"]
     end
 
     nothing
@@ -152,7 +154,13 @@ function init_epi_parameters_struct(G::Int64, M::Int64, T::Int64,
     # Infectivity of Symptomatic
     βᴵ = epi_params_dict["βᴵ"]
     # Infectivity of Asymptomatic
-    βᴬ = scale_β * βᴵ
+    if haskey(epi_params_dict, "βᴬ")
+        βᴬ = epi_params_dict["βᴬ"]
+    elseif haskey(epi_params_dict, "scale_β")
+        βᴬ = scale_β * βᴵ
+    else
+        @error "Either βᴬ or scale_β should be provided"
+    end
     # Exposed rate
     ηᵍ = Float64.(epi_params_dict["ηᵍ"])
     # Asymptomatic rate
@@ -190,7 +198,7 @@ function init_epi_parameters_struct(G::Int64, M::Int64, T::Int64,
     # Num. of vaccination statuses Vaccinated/Non-vaccinated
     V = length(kᵥ)
 
-    return Epidemic_Params(βᴵ,  βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ,  Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+    return Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 end
 
 

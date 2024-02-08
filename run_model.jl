@@ -47,7 +47,7 @@ function parse_commandline()
             help = "export compartments of simulations at a given time"
             default = nothing
             arg_type = Int
-        "--initial-compartments"
+        "--initial-conditions"
             help = "compartments to initialize simulation. If missing, use the seeds to initialize the simulations"
             default = nothing
         "--start-date"
@@ -112,9 +112,17 @@ end
 
 args = parse_commandline()
 
-config_fname  = args["config"]
-data_path     = args["data-folder"]
-instance_path = args["instance-folder"]
+config_fname         = args["config"]
+data_path            = args["data-folder"]
+instance_path        = args["instance-folder"]
+init_conditions_path = args["initial-conditions"]
+
+
+@assert isfile(config_fname);
+@assert isdir(data_path);
+@assert isdir(instance_path);
+
+@info config_fname
 
 config = JSON.parsefile(config_fname);
 update_config!(config, args)
@@ -125,6 +133,7 @@ epi_params_dict = config["epidemic_params"]
 pop_params_dict = config["population_params"]
 vac_params_dict = config["vaccination"]
 npi_params_dict = config["NPI"]
+print(config)
 
 #########################
 # Simulation output 
@@ -139,15 +148,28 @@ output_format    = simulation_dict["output_format"]
 save_full_output = get(simulation_dict, "save_full_output", false)
 save_time_step   = get(simulation_dict, "save_time_step", nothing)
 init_format      = get(simulation_dict, "init_format", "netcdf")
-initial_compartments_path = get(data_dict, "initial_condition_filename", nothing)
-#########################
+
+#####################
 # Initial Condition
-#########################
+#####################
 
-
-if isnothing(initial_compartments_path)
-    @error "ERROR. Missing initial condition file"
+if isnothing(init_conditions_path)
+    init_conditions_path = joinpath(data_path, get(data_dict, "initial_condition_filename", nothing))
 end
+
+
+# use initial compartments matrix to initialize simulations
+if init_format == "netcdf"
+    @info "Reading initial conditions from: $(init_conditions_path)"
+    initial_compartments = ncread(init_conditions_path, "data")
+elseif init_format == "hdf5"
+    initial_compartments = h5open(init_conditions_path, "r") do file
+        read(file, "data")
+    end
+else
+    @error "init_format must be one of : netcdf/hdf5"
+end
+
 
 ########################################
 ####### VARIABLES INITIALIZATION #######
@@ -186,10 +208,10 @@ V = length(epi_params_dict["kᵥ"])
 
 ## POPULATION PARAMETERS
 population       = init_pop_param_struct(G, M, G_coords, pop_params_dict, metapop_df, network_df)
-total_population = sum(population.nᵢᵍ)
-
 ## EPIDEMIC PARAMETERS 
 epi_params       = init_epi_parameters_struct(G, M, T, G_coords, epi_params_dict)
+
+@assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
 
 ##################################################
 
@@ -218,6 +240,7 @@ dur_vacc   = vac_params_dict["dur_vacc"]
 end_vacc   = start_vacc + dur_vacc
 
 # total vaccinations per age strata
+total_population = sum(population.nᵢᵍ)
 ϵᵍ = vac_params_dict["ϵᵍ"] * round( total_population * vac_params_dict["percentage_of_vacc_per_day"] )
 
 tᵛs = [start_vacc, end_vacc, T]
@@ -244,7 +267,7 @@ if !isnothing(kappa0_filename)
     # Array of premeabilities of confined households
     ϕs = ones(Float64, length(tᶜs))
     # Array of social distancing measures
-    δs = ones(Float64, length(tᶜs))
+    δs = zeros(Float64, length(tᶜs))
 else
     # Timesteps when the containment measures will be applied
     tᶜs = Int64.(npi_params_dict["tᶜs"])
@@ -261,26 +284,13 @@ end
 # npi_params = NPI_Params(tᶜs, κ₀s, ϕs, δs)
 # run_epidemic_spreading_mmca!(epi_params, population, npi_params, vac_parms; verbose = true )
 
-# Initial seeds (intial condition at the begining of the pandemic)
-# Load initial full conditions
-if initial_compartments_path !== nothing
-    # use initial compartments matrix to initialize simulations
-    if init_format == "netcdf"
-        initial_compartments = ncread(initial_compartments_path, "data")
-    elseif init_format == "hdf5"
-        initial_compartments = h5open(initial_compartments_path, "r") do file
-            read(file, "data")
-        end
-    else
-        @error "init_format must be one of : netcdf/hdf5"
-    end
-end
+
+# scale₀ = 0.8
+# initial_compartments[:, :, :, 2] .= initial_compartments[:, :, :, 2] * scale₀
 
 
-#scale₀   = 1
-#initial_compartments[:, :, :, 3] .= initial_compartments[:, :, :, 3] * scale₀
 
-@assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
+#@assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
 set_compartments!(epi_params, population, initial_compartments)
 
 ########################################################

@@ -641,6 +641,9 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
     M = population.M
     T = epi_params.T
     V = epi_params.V
+    
+    
+
 
     # Initialize τᵢ (Π = (1 - p) P + pτ) and Pᵢ for markov chain
     τᵢᵍᵥ = zeros(Float64, G, M, V)
@@ -659,7 +662,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
     ## Start loop for time evoluiton
     @inbounds for t in t₀:(T - 1)
 
-        
+        @printf("t:%d  tc:%d k:%.3f perm:%.3f social_dis:%.3f\n",t,tᶜs[i],κ₀s[i],ϕs[i], δs[i])
         update_prob!(Pᵢᵍᵥ, Sᵢᵍᵥ, τᵢᵍᵥ, epi_params, population,
                         κ₀s[i], ϕs[i], δs[i], ϵᵍs[:, j], t, tᶜs[i], tᵛs[j])
         
