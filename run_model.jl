@@ -122,8 +122,6 @@ init_conditions_path = args["initial-conditions"]
 @assert isdir(data_path);
 @assert isdir(instance_path);
 
-@info config_fname
-
 config = JSON.parsefile(config_fname);
 update_config!(config, args)
 
@@ -133,7 +131,6 @@ epi_params_dict = config["epidemic_params"]
 pop_params_dict = config["population_params"]
 vac_params_dict = config["vaccination"]
 npi_params_dict = config["NPI"]
-print(config)
 
 #########################
 # Simulation output 
@@ -265,9 +262,12 @@ if !isnothing(kappa0_filename)
     # Array of level of confinement
     κ₀s = κ₀_df.reduction[:]
     # Array of premeabilities of confined households
-    ϕs = ones(Float64, length(tᶜs))
+    #ϕs = ones(Float64, length(tᶜs))
+    ϕs = Float64.(npi_params_dict["ϕs"])
+    #print(ϕs)
     # Array of social distancing measures
-    δs = zeros(Float64, length(tᶜs))
+    #δs = zeros(Float64, length(tᶜs))
+    δs = Float64.(npi_params_dict["δs"])
 else
     # Timesteps when the containment measures will be applied
     tᶜs = Int64.(npi_params_dict["tᶜs"])
