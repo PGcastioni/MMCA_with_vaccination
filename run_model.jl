@@ -117,7 +117,6 @@ data_path            = args["data-folder"]
 instance_path        = args["instance-folder"]
 init_conditions_path = args["initial-conditions"]
 
-
 @assert isfile(config_fname);
 @assert isdir(data_path);
 @assert isdir(instance_path);
@@ -239,7 +238,6 @@ end_vacc   = start_vacc + dur_vacc
 # total vaccinations per age strata
 total_population = sum(population.nᵢᵍ)
 ϵᵍ = vac_params_dict["ϵᵍ"] * round( total_population * vac_params_dict["percentage_of_vacc_per_day"] )
-
 tᵛs = [start_vacc, end_vacc, T]
 ϵᵍs = ϵᵍ .* [0  Int(vac_params_dict["are_there_vaccines"])  0] 
 
@@ -250,38 +248,11 @@ tᵛs = [start_vacc, end_vacc, T]
 # Daily Mobility reduction
 kappa0_filename = get(data_dict, "kappa0_filename", nothing)
 
-if !isnothing(kappa0_filename)
-    kappa0_filename = joinpath(data_path, kappa0_filename)
-    @info "- Loading κ₀ time series from $(kappa0_filename)"
-    κ₀_df = CSV.read(kappa0_filename, DataFrame);
-    # syncronize containment measures with simulation
-    @info "- Synchronizing to dates"
-    κ₀_df.time = map(x -> (x .- first_day).value + 1, κ₀_df.date)
-    # Timesteps when the containment measures will be applied
-    tᶜs = κ₀_df.time[:]
-    # Array of level of confinement
-    κ₀s = κ₀_df.reduction[:]
-    # Array of premeabilities of confined households
-    #ϕs = ones(Float64, length(tᶜs))
-    ϕs = Float64.(npi_params_dict["ϕs"])
-    #print(ϕs)
-    # Array of social distancing measures
-    #δs = zeros(Float64, length(tᶜs))
-    δs = Float64.(npi_params_dict["δs"])
-else
-    # Timesteps when the containment measures will be applied
-    tᶜs = Int64.(npi_params_dict["tᶜs"])
-    # Array of level of confinement
-    κ₀s = Float64.(npi_params_dict["κ₀s"])
-    # Array of premeabilities of confined households
-    ϕs = Float64.(npi_params_dict["ϕs"])
-    # Array of social distancing measures
-    δs = Float64.(npi_params_dict["δs"])
-end
+npi_params = init_NPI_parameters_struct(npi_params_dict, kappa0_filename)
+
 
 
 # vac_parms = Vaccination_Params(tᵛs, ϵᵍs)
-# npi_params = NPI_Params(tᶜs, κ₀s, ϕs, δs)
 # run_epidemic_spreading_mmca!(epi_params, population, npi_params, vac_parms; verbose = true )
 
 
@@ -289,15 +260,13 @@ end
 # initial_compartments[:, :, :, 2] .= initial_compartments[:, :, :, 2] * scale₀
 
 
-
-#@assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
 set_compartments!(epi_params, population, initial_compartments)
 
 ########################################################
 ################ RUN THE SIMULATION ####################
 ########################################################
 
-run_epidemic_spreading_mmca!(epi_params, population, tᶜs, tᵛs, κ₀s, ϕs, δs, ϵᵍs; verbose = true )
+run_epidemic_spreading_mmca!(epi_params, population, npi_params, tᵛs, ϵᵍs; verbose = true )
 
 ##############################################################
 ################## STORING THE RESULTS #######################

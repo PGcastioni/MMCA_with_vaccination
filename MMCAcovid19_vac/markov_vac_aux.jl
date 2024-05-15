@@ -303,14 +303,30 @@ Struct that contains the parameters related with containement
 measures
 
 #Parameters
-  - κ₀s: Array of level of confinement
-  - ϕs: Array of permeabilities of confined households
-  - δs: Array of social distancing measures
-  - tᶜs: Timesteps when the containment measures will be applied
+  - κ₀s:Array{Float64, 1}: Array of level of confinement
+  - ϕs:Array{Float64, 1}: Array of permeabilities of confined households
+  - δs:Array{Float64, 1}: Array of social distancing measures
+  - tᶜs:Array{Int64, 1}: Timesteps when the containment measures will be applied
 """
 
+struct NPI_Params
+    κ₀s::Array{Float64, 1}
+    ϕs::Array{Float64, 1}
+    δs::Array{Float64, 1}
+    tᶜs::Array{Int64, 1}
+end
 
-### ----------------------------------------------------------------------------
+function NPI_Params(κ₀s::Array{Float64, 1},
+                    ϕs::Array{Float64, 1},
+                    δs::Array{Float64, 1},
+                    tᶜs::Array{Int64, 1},
+                    T::Int64)
+  κ₀s = zeros(Float64,T)
+  ϕs = ones(Float64,T)
+  δs = zeros(Float64,T)
+  tᶜs = zeros(Int64,T)
+end
+  ### ----------------------------------------------------------------------------
 ### PATCH AND POPULATION RELATED FUNCTIONS
 ### ----------------------------------------------------------------------------
 

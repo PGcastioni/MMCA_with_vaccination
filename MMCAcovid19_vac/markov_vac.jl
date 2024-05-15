@@ -84,7 +84,6 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             # elder keep home contacts during confinement
             population.kᵍ_eff[G] = kᵍ_h[G]
         end
-
         update_population_params!(population)
     end
 
@@ -103,9 +102,6 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
         for v in 1:V
             @simd for g in 1:G
                 τᵢᵍᵥ[g, i, v] += Rᵢⱼ[indx_e] * Pᵢᵍᵥ[g, j, v]
-                if τᵢᵍᵥ[g, i, v] > 1 
-                    # @printf("%.5f \n", τᵢᵍᵥ[g, i, v] )
-                end
             end
         end
     end
@@ -154,6 +150,13 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                 # Infection probability
                 Πᵢᵍᵥ = (1 - pᵍ_eff[g]) * Pᵢᵍᵥ[g, i, v] + pᵍ_eff[g] * τᵢᵍᵥ[g, i, v]
 
+                # Pier: this is an ugly fix to avoid the problem of getting more vaccines that susceptibles
+                # TO DO: incorporate this condition in the function optimal_vaccination_distribution
+                if (v == 1) & ( (Πᵢᵍᵥ * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] + new_vaccinated[g, i]) > ρˢᵍᵥ[g, i, t, v] )
+                    # print([g, i, t, v]  , "\n" )
+                    new_vaccinated[g, i] = ρˢᵍᵥ[g, i, t, v] - Πᵢᵍᵥ * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] - 1e-10
+                end
+
                 # Epidemic compartments, where all states of vaccination are present
                 ρˢᵍᵥ[g, i, t + 1, v] = ( 1 - Πᵢᵍᵥ ) * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] +
                     new_vaccinated[g, i] * ( v == 1 ? -1 : 1 ) +
@@ -164,7 +167,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                     Πᵢᵍᵥ * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] 
         
                 ρᴬᵍᵥ[g, i, t + 1, v] = (1 - αᵍ[g]) * ρᴬᵍᵥ[g, i, t, v] +
-                    ηᵍ[g] * ρᴱᵍᵥ[g, i, t, v]
+                    ηᵍ[g] * ρᴱᵍᵥ[g, i, t, v]                
 
                 ρᴵᵍᵥ[g, i, t + 1, v] = (1 - μᵍ[g]) * ρᴵᵍᵥ[g, i, t, v] +
                     αᵍ[g] * ρᴬᵍᵥ[g, i, t, v]
@@ -273,10 +276,28 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
             Sᵢᵍᵥ[g, j, :] .=  Sᵢᵍᵥ[g, j, :] .+ nˢᵍᵥ_ij[:] / nᵢᵍ_eff[g, j]
             @simd for h in 1:G
                 nᴬᵍᵥ_ij[g, j, :] .= nᴬᵍᵥ_ij[g, j, :] .+ ρᴬᵍᵥ[h, i, t, :] .* (C[g, h] * mobilityᵍ[h, indx_e] ./ nᵢᵍ_eff[h, j] .* ones(V) )
-                nᴵᵍᵥ_ij[g, j, :] .= nᴬᵍᵥ_ij[g, j, :] .+ ρᴵᵍᵥ[h, i, t, :] .* (C[g, h] * mobilityᵍ[h, indx_e] ./ nᵢᵍ_eff[h, j] .* ones(V) )
+                nᴵᵍᵥ_ij[g, j, :] .= nᴵᵍᵥ_ij[g, j, :] .+ ρᴵᵍᵥ[h, i, t, :] .* (C[g, h] * mobilityᵍ[h, indx_e] ./ nᵢᵍ_eff[h, j] .* ones(V) )
             end
         end
     end
+
+
+    # @inbounds for indx_e in 1:length(Rᵢⱼ)
+    #     i = edgelist[indx_e, 1]
+    #     j = edgelist[indx_e, 2]
+
+    #     # Get effective S, A and I
+    #     for g in 1:G
+    #         nˢᵍ_ij = ρˢᵍ[g, i, t] * mobilityᵍ[g, indx_e]
+    #         Sᵢᵍ[g, j] +=  nˢᵍ_ij / nᵢᵍ_eff[g, j]
+    #         @simd for h in 1:G
+    #             nᴬᵍ_ij = ρᴬᵍ[h, i, t] * mobilityᵍ[h, indx_e]
+    #             nᴵᵍ_ij = ρᴵᵍ[h, i, t] * mobilityᵍ[h, indx_e]
+    #             Pᵢᴬᵍ[g, j] += C[g, h] * nᴬᵍ_ij / nᵢᵍ_eff[h, j]
+    #             Pᵢᴵᵍ[g, j] += C[g, h] * nᴵᵍ_ij / nᵢᵍ_eff[h, j]
+    #         end
+    #     end
+    # end
 
     # Get P and effective ρ
     @inbounds for i in 1:M
@@ -565,12 +586,9 @@ the application of a containmnet or a vaccination campaign on a specific date.
   evolution of the epidemic process.
 """
 function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
-                                      population::Population_Params;
-                                      tᶜ::Int64 = -1,
+                                      population::Population_Params,
+                                      npi_params::NPI_Params;
                                       tᵛ::Int64 = -1,
-                                      κ₀::Float64 = 0.0,
-                                      ϕ::Float64 = 1.0,
-                                      δ::Float64 = 0.0,
                                       ϵᵍ::Array{Float64, 1} = [0., 0., 0.],
                                       t₀::Int64 = 1,
                                       verbose::Bool = false)
@@ -586,8 +604,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
     Sᵢᵍᵥ = zeros(Float64, G, M, V)
     
     
-    run_epidemic_spreading_mmca!(epi_params, population, [tᶜ], [tᵛ],
-                                 [κ₀], [ϕ], [δ], reshape(ϵᵍ, (3,1)) , t₀ = t₀, verbose = verbose)
+    run_epidemic_spreading_mmca!(epi_params, population, npi_params, [tᵛ], reshape(ϵᵍ, (3,1)) , t₀ = t₀, verbose = verbose)
 end
 
 
@@ -628,11 +645,8 @@ of multiple different containmnets or vaccination campaigns at specific dates.
 """
 function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                       population::Population_Params,
-                                      tᶜs::Array{Int64, 1},
+                                      npi_params::NPI_Params,
                                       tᵛs::Array{Int64, 1},
-                                      κ₀s::Array{Float64, 1},
-                                      ϕs::Array{Float64, 1},
-                                      δs::Array{Float64, 1},
                                       ϵᵍs::Array{Float64, 2};
                                       t₀::Int64 = 1,
                                       verbose::Bool = false)
@@ -641,9 +655,6 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
     M = population.M
     T = epi_params.T
     V = epi_params.V
-    
-    
-
 
     # Initialize τᵢ (Π = (1 - p) P + pτ) and Pᵢ for markov chain
     τᵢᵍᵥ = zeros(Float64, G, M, V)
@@ -661,12 +672,10 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
 
     ## Start loop for time evoluiton
     @inbounds for t in t₀:(T - 1)
-
-        @printf("t:%d  tc:%d k:%.3f perm:%.3f social_dis:%.3f\n",t,tᶜs[i],κ₀s[i],ϕs[i], δs[i])
         update_prob!(Pᵢᵍᵥ, Sᵢᵍᵥ, τᵢᵍᵥ, epi_params, population,
-                        κ₀s[i], ϕs[i], δs[i], ϵᵍs[:, j], t, tᶜs[i], tᵛs[j])
+                        npi_params.κ₀s[i], npi_params.ϕs[i], npi_params.δs[i], ϵᵍs[:, j], t, npi_params.tᶜs[i], tᵛs[j])
         
-        if t == tᶜs[i] && i < length(tᶜs)
+        if t == npi_params.tᶜs[i] && i < length(npi_params.tᶜs)
             i += 1
         end
 
