@@ -316,16 +316,7 @@ struct NPI_Params
     tᶜs::Array{Int64, 1}
 end
 
-function NPI_Params(κ₀s::Array{Float64, 1},
-                    ϕs::Array{Float64, 1},
-                    δs::Array{Float64, 1},
-                    tᶜs::Array{Int64, 1},
-                    T::Int64)
-  κ₀s = zeros(Float64,T)
-  ϕs = ones(Float64,T)
-  δs = zeros(Float64,T)
-  tᶜs = zeros(Int64,T)
-end
+
   ### ----------------------------------------------------------------------------
 ### PATCH AND POPULATION RELATED FUNCTIONS
 ### ----------------------------------------------------------------------------
@@ -576,7 +567,7 @@ function compute_effective_population!(nᵢᵍ_eff::Array{Float64, 2},
         end
     end
 
-    # Compute the aggerated effective populatoin
+    # Compute the aggregated effective populatoin
     for i in 1:M
         for g in 1:G
             nᵢ_eff[i] += nᵢᵍ_eff[g, i]
