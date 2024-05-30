@@ -655,7 +655,7 @@ function set_initial_conditions!(epi_params::Epidemic_Params,
     t₀ = 1
     
     # Initial susceptible population
-    @. epi_params.ρˢᵍᵥ[:, :, t₀, 2] = Sᵛ₀ / population.nᵢᵍ
+    @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = Sᵛ₀ / population.nᵢᵍ
 
     # Initial exposed population
     @. epi_params.ρᴱᵍᵥ[:, :, t₀, 1] = E₀ / population.nᵢᵍ 
@@ -681,7 +681,7 @@ function set_initial_conditions!(epi_params::Epidemic_Params,
     epi_params.ρᴿᵍᵥ[isnan.(epi_params.ρᴿᵍᵥ)] .= 0
 
     # Update the fraction of suceptible individual
-    @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = 1 - (epi_params.ρˢᵍᵥ[:, :, t₀, 2] +
+    @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = 1 - (epi_params.ρˢᵍᵥ[:, :, t₀, 1] +
                                        epi_params.ρᴱᵍᵥ[:, :, t₀, 1] +
                                        epi_params.ρᴬᵍᵥ[:, :, t₀, 1] +
                                        epi_params.ρᴵᵍᵥ[:, :, t₀, 1] +

@@ -181,7 +181,7 @@ T_coords  = string.(collect(first_day:last_day))
 
 # Loading metapopulation patches info (surface, label, population by age)
 metapop_data_filename = joinpath(data_path, data_dict["metapopulation_data_filename"])
-metapop_df = CSV.read(metapop_data_filename, DataFrame)
+metapop_df = CSV.read(metapop_data_filename, DataFrame, types=Dict(:id => String))
 
 # Loading mobility network
 mobility_matrix_filename = joinpath(data_path, data_dict["mobility_matrix_filename"])
