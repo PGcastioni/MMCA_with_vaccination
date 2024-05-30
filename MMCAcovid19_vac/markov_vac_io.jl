@@ -201,7 +201,7 @@ function init_epi_parameters_struct(G::Int64, M::Int64, T::Int64,
     return Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, Λ, Γ, rᵥ, kᵥ, G, M, T, V)
 end
 
-function init_NPI_parameters_struct(npi_params_dict::Dict, kappa0_filename)
+function init_NPI_parameters_struct(npi_params_dict::Dict, kappa0_filename::String)
     if !isnothing(kappa0_filename)
         kappa0_filename = joinpath(data_path, kappa0_filename)
         @info "- Loading κ₀ time series from $(kappa0_filename)"
@@ -217,39 +217,11 @@ function init_NPI_parameters_struct(npi_params_dict::Dict, kappa0_filename)
         
         ϕs_aux = Float64.(npi_params_dict["ϕs"])
         δs_aux = Float64.(npi_params_dict["δs"])
-        t_aux = npi_params_dict["tᶜs"]
 
-        if length(ϕs_aux)!=length(t_aux)
-            @error "ϕs and tᶜs don't have the same lentgh"
-        end
-        
-        if length(δs_aux)!=length(t_aux)
-            @error "δs and tᶜs don't have the same lentgh"
-        end
-
+        #Supposing ϕs and δs are constant, while the confinement measures are applied
         ϕs = fill(ϕs_aux[1], length(tᶜs))
         δs = fill(δs_aux[1], length(tᶜs))
-        # ϕs = ones(Float64, length(tᶜs))
-        # δs = zeros(Float64, length(tᶜs))
         
-        # indx = 1
-        # t_0 = tᶜs[1]
-        # t_i = t_0
-        # for t_j in t_aux
-        #     if t_j <  tᶜs[1]
-        #         t_j = tᶜs[1]
-        #         @warn "t_j <  tᶜs[1]"
-        #     elseif  t_j > last(tᶜs)
-        #         t_j = last(tᶜs)
-        #         @warn "t_j > last(tᶜs)"
-        #     end          
-        #     for w in (t_i-t_0 + 1):(t_j-t_i)
-        #         ϕs[w] = ϕs_aux[indx]
-        #         δs[w] = δs_aux[indx]
-        #     end
-        #     t_i = t_j
-        #     indx = indx + 1
-        # end
     else
         # Timesteps when the containment measures will be applied
         tᶜs = npi_params_dict["tᶜs"]
