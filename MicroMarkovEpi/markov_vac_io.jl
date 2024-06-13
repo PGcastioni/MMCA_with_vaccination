@@ -195,7 +195,7 @@ function init_epi_parameters_struct(G::Int64, M::Int64, T::Int64,
     # Relative risk reduction of the probability of transmission
     kᵥ = Float64.(epi_params_dict["kᵥ"])
 
-    # Num. of vaccination statuses Vaccinated/Non-vaccinated
+    # Num. of vaccination statuses Vaccinated/Non-vaccinated/Residual-Immunity
     V = length(kᵥ)
 
     return Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, Λ, Γ, rᵥ, kᵥ, G, M, T, V)
@@ -228,7 +228,7 @@ function init_NPI_parameters_struct(npi_params_dict::Dict, kappa0_filename::Stri
         # Array of level of confinement
         κ₀s = npi_params_dict["κ₀s"]
         # Array of premeabilities of confined households
-        ϕs = npi_params_dict["ϕs"]
+        	ϕs = npi_params_dict["ϕs"]
         # Array of social distancing measures
         δs = npi_params_dict["δs"]
     end

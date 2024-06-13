@@ -23,9 +23,9 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                       epi_params::Epidemic_Params,
                       population::Population_Params,
                       κ₀::Float64,
-                      ϕ::Float64,
+                                 ϕ::Float64,
                       δ::Float64,
-                      ϵᵍ::Array{Float64, 1},
+                     	         ϵᵍ::Array{Float64, 1},
                       t::Int64,
                       tᶜ::Int64, 
                       tᵛ::Int64)
@@ -84,6 +84,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             # elder keep home contacts during confinement
             population.kᵍ_eff[G] = kᵍ_h[G]
         end
+
         update_population_params!(population)
     end
 
@@ -149,7 +150,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                 
                 # Infection probability
                 Πᵢᵍᵥ = (1 - pᵍ_eff[g]) * Pᵢᵍᵥ[g, i, v] + pᵍ_eff[g] * τᵢᵍᵥ[g, i, v]
-
+                
                 # Pier: this is an ugly fix to avoid the problem of getting more vaccines that susceptibles
                 # TO DO: incorporate this condition in the function optimal_vaccination_distribution
                 if (v == 1) & ( (Πᵢᵍᵥ * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] + new_vaccinated[g, i]) > ρˢᵍᵥ[g, i, t, v] )
@@ -159,15 +160,15 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
 
                 # Epidemic compartments, where all states of vaccination are present
                 ρˢᵍᵥ[g, i, t + 1, v] = ( 1 - Πᵢᵍᵥ ) * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] +
-                    new_vaccinated[g, i] * ( v == 1 ? -1 : 1 ) +
-                    Λ * ( v == 1 ? 1 : -1 ) * ρˢᵍᵥ[g, i, t, 2] +
-                    Γ * ( v == 2 ? 1 : 0 ) * ρᴿᵍᵥ[g, i, t, 1]
+                    new_vaccinated[g, i] * ( [-1, +1, 0][v] ) +
+                    Λ * ( [0, -1, +1][v] ) * ρˢᵍᵥ[g, i, t, 2] +  # The term inside the parentheses works as a if-then clause
+                    Γ * ( [0 , 0, +1][v] ) * (ρᴿᵍᵥ[g, i, t, 1] + ρᴿᵍᵥ[g, i, t, 2] + ρᴿᵍᵥ[g, i, t, 3])
                 
                 ρᴱᵍᵥ[g, i, t + 1, v] = (1 - ηᵍ[g]) * ρᴱᵍᵥ[g, i, t, v] +
                     Πᵢᵍᵥ * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] 
         
                 ρᴬᵍᵥ[g, i, t + 1, v] = (1 - αᵍ[g]) * ρᴬᵍᵥ[g, i, t, v] +
-                    ηᵍ[g] * ρᴱᵍᵥ[g, i, t, v]                
+                    ηᵍ[g] * ρᴱᵍᵥ[g, i, t, v]
 
                 ρᴵᵍᵥ[g, i, t + 1, v] = (1 - μᵍ[g]) * ρᴵᵍᵥ[g, i, t, v] +
                     αᵍ[g] * ρᴬᵍᵥ[g, i, t, v]
@@ -186,22 +187,23 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
 
                 ρᴿᵍᵥ[g, i, t + 1, v] = ρᴿᵍᵥ[g, i, t, v] + χᵍ[g] * ρᴴᴿᵍᵥ[g, i, t, v] +
                     μᵍ[g] * (1 - θᵍ[g, v]) * (1 - γᵍ[g, v]) * ρᴵᵍᵥ[g, i , t, v] -
-                    Γ * ( v == 1 ? 1 : 0 ) * ρᴿᵍᵥ[g, i, t, 1]
+                    Γ * ρᴿᵍᵥ[g, i, t, v] 
 
                 ρᴰᵍᵥ[g, i, t + 1, v] = ρᴰᵍᵥ[g, i, t, v] + ζᵍ[g] * ρᴾᴰᵍᵥ[g, i, t, v] +
                     ψᵍ[g] * ρᴴᴰᵍᵥ[g, i, t, v]
                 
-                ### Pier: I moved inside the loop all the things that were outside before
-                # Reset values
-                τᵢᵍᵥ[g, i, :] .= 0.
-                Pᵢᵍᵥ[g, i, :] .= 0.
 
                 if tᶜ == t
                     aux = ρˢᵍᵥ[g, i, t, v]
                     ρˢᵍᵥ[g, i, t, v] -= CHᵢᵍᵥ[g, i, v] 
                     CHᵢᵍᵥ[g, i, v] = CHᵢ * aux
                 end 
-            end            
+            end   
+            
+            # Reset values
+            τᵢᵍᵥ[g, i, :] .= 0.
+	    # this should be one, based on the intial value provided in run_epidemic_spreading_mmca
+            Pᵢᵍᵥ[g, i, :] .= 0. 
         end
     end
     
@@ -302,12 +304,13 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
     # Get P and effective ρ
     @inbounds for i in 1:M
         for v in 1:V
-            @simd for g in 1:G
-                Pᵢᵍᵥ[g, i, v] = 1 - 
-                    (1 - βᴬ*(1 - rᵥ[v])*(1 - kᵥ[1]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, 1]) *
-                    (1 - βᴬ*(1 - rᵥ[v])*(1 - kᵥ[2]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, 2]) *
-                    (1 - βᴵ*(1 - rᵥ[v])*(1 - kᵥ[1]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, 1]) *
-                    (1 - βᴵ*(1 - rᵥ[v])*(1 - kᵥ[2]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, 2])
+            for g in 1:G
+                aux = 1.0
+                @simd for w in 1:V
+                    aux = aux * (1 - βᴬ*(1 - rᵥ[v])*(1 - kᵥ[w]) )^(normᵍ[g, i] * nᴬᵍᵥ_ij[g, i, w]) *
+                                (1 - βᴵ*(1 - rᵥ[v])*(1 - kᵥ[w]) )^(normᵍ[g, i] * nᴵᵍᵥ_ij[g, i, w]) 
+                end
+                Pᵢᵍᵥ[g, i, v] = 1 - aux
             end
         end
     end
@@ -320,7 +323,6 @@ function compute_P!(Pᵢᵍᵥ::Array{Float64, 3},
         for g in 1:G     
             for v in 1:V
                 @simd for h in 1:G
-                    #### ATTENTION: Here I changed normᵍ[g, i] to normᵍ[g, j]
                     Qᵢᵍ[g, i, t] += normᵍ[g, j] * C[g, h] * Sᵢᵍᵥ[h, j, v] *
                     (pᵍ_eff[g] * Rᵢⱼ[indx_e] + (1 - pᵍ_eff[g]) * (i == j ? 1. : 0.))
                 end
@@ -354,23 +356,36 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴰᵍᵥ[:, :, t, :] .+
                     epi_params.CHᵢᵍᵥ[:, :, :] ) .* population.nᵢᵍ[:, :])
 
+    sus3 = sum((epi_params.ρˢᵍᵥ[:, :, t, 3] ) .* population.nᵢᵍ[:, :])
+
     infected = sum(epi_params.ρᴵᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :] .+
                    epi_params.ρᴬᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :])
 
-    cases    = sum((epi_params.ρᴾᴰᵍᵥ[:, :, t, :] .+
-                    epi_params.ρᴾᴴᵍᵥ[:, :, t, :] .+
-                    epi_params.ρᴴᴰᵍᵥ[:, :, t, :] .+
-                    epi_params.ρᴴᴿᵍᵥ[:, :, t, :] .+
-                    epi_params.ρᴿᵍᵥ[:, :, t, :] .+
-                    epi_params.ρᴰᵍᵥ[:, :, t, :]) .* population.nᵢᵍ[:, :])
+    cases3    = sum((epi_params.ρᴾᴰᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴾᴴᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴴᴰᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴴᴿᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴿᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴰᵍᵥ[:, :, t, 3]) .* population.nᵢᵍ[:, :])
 
     icus     = sum((epi_params.ρᴴᴿᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴴᴰᵍᵥ[:, :, t, :]) .* population.nᵢᵍ[:, :])
 
     deaths   = sum(epi_params.ρᴰᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :])
 
-    
-    vaccinated = sum((epi_params.ρˢᵍᵥ[:, :, t, 2] .+
+    vaccine1 = sum((epi_params.ρˢᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴾᴰᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴱᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴬᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴵᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴾᴴᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴴᴰᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴴᴿᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴿᵍᵥ[:, :, t, 1] .+
+                    epi_params.ρᴰᵍᵥ[:, :, t, 1] .+
+                    epi_params.CHᵢᵍᵥ[:, :, 1] ) .* population.nᵢᵍ[:, :]) / population.N
+
+    vaccine2 = sum((epi_params.ρˢᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴾᴰᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴱᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴬᵍᵥ[:, :, t, 2] .+
@@ -379,10 +394,23 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴰᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, 2] .+
-                    epi_params.ρᴰᵍᵥ[:, :, t, 2] ) .* population.nᵢᵍ[:, :]) / population.N
+                    epi_params.ρᴰᵍᵥ[:, :, t, 2] .+
+                    epi_params.CHᵢᵍᵥ[:, :, 2] ) .* population.nᵢᵍ[:, :]) / population.N
 
-    @printf("Time: %d, players: %.5f, icus: %.2f, deaths: %.2f, vaccine_check: %.3f\n",
-            t, players, icus, deaths, vaccinated )
+    vaccine3 = sum((epi_params.ρˢᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴾᴰᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴱᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴬᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴵᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴾᴴᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴴᴰᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴴᴿᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴿᵍᵥ[:, :, t, 3] .+
+                    epi_params.ρᴰᵍᵥ[:, :, t, 3] .+
+                    epi_params.CHᵢᵍᵥ[:, :, 3] ) .* population.nᵢᵍ[:, :]) / population.N
+
+    @printf("Time: %d, players: %.2f, sus3: %.2f, cases3: %.2f, deaths: %.2f, vaccine1 = %.2f, vaccine2: %.2f, vaccine3: %.2f\n",
+            t, players, sus3, cases3, deaths, vaccine1, vaccine2, vaccine3 )
     
 end
 
@@ -414,26 +442,16 @@ function time_series(epi_params::Epidemic_Params,
         
             deaths   = sum(epi_params.ρᴰᵍᵥ[:, :, :, :] .* population.nᵢᵍ[:, :], dims=(1,2,4) )[1,1,:,1],
         
-            vaccinated = sum((epi_params.ρˢᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴾᴰᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴱᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴬᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴵᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴾᴴᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴴᴰᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴴᴿᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴿᵍᵥ[:, :, :, 2] .+
-                              epi_params.ρᴰᵍᵥ[:, :, :, 2] ) .* population.nᵢᵍ[:, :], dims=(1,2) )[1,1,:],
-        
-            daily_cases = diff( sum((epi_params.ρᴵᵍᵥ[:, :, :, :] .+ 
-                                     epi_params.ρᴬᵍᵥ[:, :, :, :] .+
-                                     epi_params.ρᴾᴰᵍᵥ[:, :, :, :] .+
-                                     epi_params.ρᴾᴴᵍᵥ[:, :, :, :] .+
-                                     epi_params.ρᴴᴰᵍᵥ[:, :, :, :] .+
-                                     epi_params.ρᴴᴿᵍᵥ[:, :, :, :] .+
-                                     epi_params.ρᴿᵍᵥ[:, :, :, :] .+
-                                     epi_params.ρᴰᵍᵥ[:, :, :, :]) .* population.nᵢᵍ[:, :], dims=(1,2,4) )[1,1,:,1]
-                                )
+            vaccinated = sum((epi_params.ρˢᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴾᴰᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴱᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴬᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴵᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴾᴴᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴴᴰᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴴᴿᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴿᵍᵥ[:, :, :, 2:3] .+
+                              epi_params.ρᴰᵍᵥ[:, :, :, 2:3] ) .* population.nᵢᵍ[:, :], dims=(1,2,4) )[1,1,:,1]
         
         )
 end    
@@ -484,7 +502,7 @@ function optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
                                           ρˢᵍᵥ::Array{Float64, 4},
                                           nᵢᵍ::Array{Float64, 2},
                                           t::Int64)
-    
+    # print(t, "\n")
     Nᵥ = sum(ϵᵍ) # Total number of vaccines
     (G, M) = size(nᵢᵍ)
 
@@ -493,10 +511,11 @@ function optimal_vaccination_distribution(ϵᵍ::Array{Float64, 1},
         return zeros(G, M)
     end
     
-    only_positive = all(ρˢᵍᵥ[:, :, t, 1] .>= 0.0) & 
-            all(ρˢᵍᵥ[:, :, t, 2] .>= 0.0) &
-            all(ρˢᵍᵥ[:, :, t, 1] .<= 1.0) &
-            all(ρˢᵍᵥ[:, :, t, 2] .<= 1.0)
+    
+    only_positive = true
+    for v in 1:V
+        only_positive = only_positive & all(ρˢᵍᵥ[:, :, t, v] .>= 0.0) & all(ρˢᵍᵥ[:, :, t, v] .<= 1.0)
+    end
         
     if any(ϵᵍ .< 0)
         @printf("\n ----------------------------- \n ATTENZIONE: Number of dosis is negative \n ----------------------------- ")
@@ -589,7 +608,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                       population::Population_Params,
                                       npi_params::NPI_Params;
                                       tᵛ::Int64 = -1,
-                                      ϵᵍ::Array{Float64, 1} = [0., 0., 0.],
+                                                         ϵᵍ::Array{Float64, 1} = [0., 0., 0.],
                                       t₀::Int64 = 1,
                                       verbose::Bool = false)
     G = population.G
@@ -647,7 +666,7 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
                                       population::Population_Params,
                                       npi_params::NPI_Params,
                                       tᵛs::Array{Int64, 1},
-                                      ϵᵍs::Array{Float64, 2};
+                                                         ϵᵍs::Array{Float64, 2};
                                       t₀::Int64 = 1,
                                       verbose::Bool = false)
 
@@ -662,6 +681,11 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
 
     Sᵢᵍᵥ = zeros(Float64, G, M, V)
 
+    κ₀s = npi_params.κ₀s
+      ϕs = npi_params.ϕs
+    δs = npi_params.δs
+    tᶜs = npi_params.tᶜs
+
     # Initial state
     if verbose
         print_status(epi_params, population, t₀)
@@ -672,10 +696,11 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
 
     ## Start loop for time evoluiton
     @inbounds for t in t₀:(T - 1)
-        update_prob!(Pᵢᵍᵥ, Sᵢᵍᵥ, τᵢᵍᵥ, epi_params, population,
-                        npi_params.κ₀s[i], npi_params.ϕs[i], npi_params.δs[i], ϵᵍs[:, j], t, npi_params.tᶜs[i], tᵛs[j])
         
-        if t == npi_params.tᶜs[i] && i < length(npi_params.tᶜs)
+        update_prob!(Pᵢᵍᵥ, Sᵢᵍᵥ, τᵢᵍᵥ, epi_params, population,
+                        κ₀s[i], ϕs[i], δs[i], ϵᵍs[:, j], t, tᶜs[i], tᵛs[j])
+        
+        if t == tᶜs[i] && i < length(tᶜs)
             i += 1
         end
 
@@ -684,10 +709,10 @@ function run_epidemic_spreading_mmca!(epi_params::Epidemic_Params,
         end
         
         # To avoid negative compartments
-        only_positive = all(epi_params.ρˢᵍᵥ[:, :, t, 1] .>= 0.0) & 
-            all(epi_params.ρˢᵍᵥ[:, :, t, 2] .>= 0.0) &
-            all(epi_params.ρˢᵍᵥ[:, :, t, 1] .<= 1.0) &
-            all(epi_params.ρˢᵍᵥ[:, :, t, 2] .<= 1.0)
+        only_positive = true
+        for v in 1:V
+            only_positive = only_positive & all(epi_params.ρˢᵍᵥ[:, :, t, v] .>= 0.0) & all(epi_params.ρˢᵍᵥ[:, :, t, v] .<= 1.0)
+        end
         
         if !only_positive
             @printf("ATTENZIONE: I suscettibili sono meno di 0 o più di 1\n")

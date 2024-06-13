@@ -211,7 +211,7 @@ function Epidemic_Params(βᴵ::Float64,
     CompLabels = ["S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D"]
     
     # Allocate memory for simulations
-    ρˢᵍᵥ  = ones(Float64, G, M, T, V)
+    ρˢᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴱᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴬᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴵᵍᵥ  = zeros(Float64, G, M, T, V)
@@ -221,7 +221,7 @@ function Epidemic_Params(βᴵ::Float64,
     ρᴴᴰᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴰᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴿᵍᵥ  = zeros(Float64, G, M, T, V)
-    CHᵢᵍᵥ = zeros(Float64, G, M, V)
+    CHᵢᵍᵥ  = zeros(Float64, G, M, V)
     Qᵢᵍ   = zeros(Float64, G, M, T)
     
     return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
@@ -263,7 +263,8 @@ Reset the ρ's to reuse the structure and avoid additional allocations.
 - `epi_params::Epidemic_Params`: structure to reset.
 """
 function reset_epidemic_params!(epi_params::Epidemic_Params)
-    epi_params.ρˢᵍᵥ .= 1.
+    epi_params.ρˢᵍᵥ .= 0.
+    epi_params.ρˢᵍᵥ[:, :, :, 1] .= 1.
     epi_params.ρᴱᵍᵥ .= 0.
     epi_params.ρᴬᵍᵥ .= 0.
     epi_params.ρᴵᵍᵥ .= 0.
@@ -567,7 +568,7 @@ function compute_effective_population!(nᵢᵍ_eff::Array{Float64, 2},
         end
     end
 
-    # Compute the aggregated effective populatoin
+    # Compute the aggregated effective population
     for i in 1:M
         for g in 1:G
             nᵢ_eff[i] += nᵢᵍ_eff[g, i]
@@ -655,7 +656,7 @@ function set_initial_conditions!(epi_params::Epidemic_Params,
     t₀ = 1
     
     # Initial susceptible population
-    @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = Sᵛ₀ / population.nᵢᵍ
+    @. epi_params.ρˢᵍᵥ[:, :, t₀, 2] = Sᵛ₀ / population.nᵢᵍ
 
     # Initial exposed population
     @. epi_params.ρᴱᵍᵥ[:, :, t₀, 1] = E₀ / population.nᵢᵍ 
@@ -681,7 +682,7 @@ function set_initial_conditions!(epi_params::Epidemic_Params,
     epi_params.ρᴿᵍᵥ[isnan.(epi_params.ρᴿᵍᵥ)] .= 0
 
     # Update the fraction of suceptible individual
-    @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = 1 - (epi_params.ρˢᵍᵥ[:, :, t₀, 1] +
+    @. epi_params.ρˢᵍᵥ[:, :, t₀, 1] = 1 - (epi_params.ρˢᵍᵥ[:, :, t₀, 2] +
                                        epi_params.ρᴱᵍᵥ[:, :, t₀, 1] +
                                        epi_params.ρᴬᵍᵥ[:, :, t₀, 1] +
                                        epi_params.ρᴵᵍᵥ[:, :, t₀, 1] +
