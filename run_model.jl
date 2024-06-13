@@ -1,6 +1,3 @@
-#using DelimitedFiles
-
-
 using Printf
 using ArgParse
 using Logging
@@ -15,12 +12,11 @@ using DelimitedFiles
 using DataFrames
 
 
-
 base_folder = ""
 
-include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac_aux.jl"))
-include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac_io.jl"))
-include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac.jl"))
+include(joinpath(base_folder, "MicroMarkovEpi/markov_vac_aux.jl"))
+include(joinpath(base_folder, "MicroMarkovEpi/markov_vac_io.jl"))
+include(joinpath(base_folder, "MicroMarkovEpi/markov_vac.jl"))
 
 
 ####################################################

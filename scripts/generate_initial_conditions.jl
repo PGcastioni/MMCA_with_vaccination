@@ -14,9 +14,9 @@ using NetCDF
 
 base_folder = ".."
 
-include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac_aux.jl"))
-include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac_io.jl"))
-include(joinpath(base_folder, "MMCAcovid19_vac/markov_vac.jl"))
+include(joinpath(base_folder, "MicroMarkovEpi/markov_vac_aux.jl"))
+include(joinpath(base_folder, "MicroMarkovEpi/markov_vac_io.jl"))
+include(joinpath(base_folder, "MicroMarkovEpi/markov_vac.jl"))
 
 
 function parse_commandline()
@@ -88,9 +88,9 @@ function main()
     V = epi_params.V
     N = epi_params.NumComps
     comp_coords = epi_params.CompLabels
-    V_coords = ["NV", "V"]
+    V_coords = ["NV", "V1", "V2"]
 
-    # Loading initial 
+    # Loading initial
     conditions₀ = CSV.read(seeds_fname, DataFrame);
 
     M_idx  = Int.(conditions₀[:,"idx"])
