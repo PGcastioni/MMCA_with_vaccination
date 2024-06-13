@@ -134,7 +134,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                 end
                 CHᵢ += ( 1 - aux ) * population.nᵢᵍ[g, i]
             end
-            CHᵢ = (1 - ϕ) * κ₀ * (CHᵢ / population.nᵢ[i]) ^ population.σ            
+            CHᵢ = (1 - ϕ) * κ₀ * (CHᵢ / population.nᵢ[i]) ^ population.σ
         end
       
         
@@ -167,7 +167,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                     Πᵢᵍᵥ * (1 - CHᵢ) * ρˢᵍᵥ[g, i, t, v] 
         
                 ρᴬᵍᵥ[g, i, t + 1, v] = (1 - αᵍ[g]) * ρᴬᵍᵥ[g, i, t, v] +
-                    ηᵍ[g] * ρᴱᵍᵥ[g, i, t, v]                
+                    ηᵍ[g] * ρᴱᵍᵥ[g, i, t, v]
 
                 ρᴵᵍᵥ[g, i, t + 1, v] = (1 - μᵍ[g]) * ρᴵᵍᵥ[g, i, t, v] +
                     αᵍ[g] * ρᴬᵍᵥ[g, i, t, v]

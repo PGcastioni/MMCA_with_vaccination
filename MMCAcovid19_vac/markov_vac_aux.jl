@@ -567,7 +567,7 @@ function compute_effective_population!(nᵢᵍ_eff::Array{Float64, 2},
         end
     end
 
-    # Compute the aggregated effective populatoin
+    # Compute the aggregated effective population
     for i in 1:M
         for g in 1:G
             nᵢ_eff[i] += nᵢᵍ_eff[g, i]
