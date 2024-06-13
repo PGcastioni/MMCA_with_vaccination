@@ -130,11 +130,11 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             for g in 1:G
                 aux = 0.0
                 @simd for v in 1:V
-                    aux += ρᴱᵍᵥ[g, i, t, v] + ρᴬᵍᵥ[g, i, t, v] + ρᴵᵍᵥ[g, i, t, v] 
+                    aux += ρᴱᵍᵥ[g, i, t, v] + ρᴬᵍᵥ[g, i, t, v] + ρᴵᵍᵥ[g, i, t, v]
                 end
                 CHᵢ += ( 1 - aux ) * population.nᵢᵍ[g, i]
             end
-            CHᵢ = (1 - ϕ) * κ₀ * (CHᵢ / population.nᵢ[i]) ^ population.σ
+            CHᵢ = (1 - ϕ) * κ₀ * (CHᵢ / population.nᵢ[i]) ^ population.σ            
         end
       
         
