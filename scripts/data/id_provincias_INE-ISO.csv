@@ -1,0 +1,53 @@
+Provincia,codigo_INE,codigo_ISO,distrito_mitma
+Alava,01,VI,0105902
+Albacete,02,AB,0200302
+Alicante,03,A,0301404
+Almeria,04,AL,0401307
+Avila,05,AV,0501904
+Badajoz,06,BA,0601504
+Islas Baleares,07,PM,0704004
+Barcelona,08,B,0801902
+Burgos,09,BU,0905905
+Caceres,10,CC,1003704
+Cadiz,11,CA,11028
+Castellon,12,CS,1204007
+Ciudad Real,13,CR,1303402
+Cordoba,14,CO,1402106
+ A Coruna,15,C,1503007
+Cuenca,16,CU,1607804
+Girona,17,GI,1707903
+Granada,18,GR,1808703
+Guadalajara,19,GU,1913002
+Gipuzkoa,20,SS,2006907
+Huelva,21,H,2104101
+Huesca,22,HU,2212507
+Jaen,23,J,2305005
+Leon,24,LE,2408903
+Lleida,25,L,2512006
+La Rioja,26,LO,2608904
+Lugo,27,LU,2702802
+Madrid,28,M,2807901
+Malaga,29,MA,2906709
+Murcia,30,MU,3003004
+Navarra,31,NA,3120107
+Ourense,32,OR,3205401
+Asturias,33,O,3304406
+Palencia,34,P,3412005
+Las Palmas,35,GC,3501604
+Pontevedra,36,PO,3605703
+Salamanca,37,SA,3727404
+Santa Cruz de Tenerife,38,TF,3803806
+Cantabria,39,S,3907502
+Segovia,40,SG,4019405
+Sevilla ,41,SE,4109105
+Soria,42,SO,42173
+Tarragona,43,T,4314804
+Teruel,44,TE,44216
+Toledo,45,TO,4516805
+Valencia,46,V,4625010
+Valladolid,47,VA,4718610
+Bizkaia,48,BI,4802005
+Zamora,49,ZA,4927501
+Zaragoza,50,Z,5029710
+Ceuta,51,CE,5100104
+Melilla,52,ML,5200108

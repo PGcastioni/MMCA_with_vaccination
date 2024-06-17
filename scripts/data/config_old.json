@@ -1,0 +1,68 @@
+{
+	"data": {
+		"parameters_columns": ["P", "beta", "scale_beta", "t_inc", "scale_ea", "t_i", "delta", "phi", "scale_s"],
+        "A0_filename": "A0_initial_conditions.csv",
+        "kappa0_filename": "kappa0_from_mitma.csv",
+        "fit_alternatives": {
+        	"deaths": {
+        		"real_data_filename": "ccaa_covid19_fallecidos_long_Marc.csv",
+        		"sim_data_pattern": "deaths_new_*.npy",
+        		"skip_first_day_simulation": true
+        	},
+        	"incidence": {
+        		"real_data_filename": "ccaa_covid19_incidencia.csv",
+		        "sim_data_pattern": "incidence_*.npy",
+		        "skip_first_day_simulation": true
+        	}
+        }
+	},
+	"simulation": {
+		"first_day_simulation": "2020-02-09",
+		"last_day_simulation": "2020-03-09",
+		"export_compartments_time_t": null,
+		"export_compartments_full": true,
+		"initial_compartments": null
+	},
+	"model": {
+		"kᵍ": [11.8, 13.3, 6.76],
+		"kᵍ_h": [3.15, 3.17, 3.28],
+		"kᵍ_w": [1.72, 5.18, 0.0],
+		"pᵍ": [0.0, 1.0, 0.00],
+		"ξ": 0.01,
+		"σ": 2.5,		
+		"scale_β": 0.51,
+		"βᴵ": 0.0903,
+		"ηᵍ": [0.2747252747252747, 0.2747252747252747, 0.2747252747252747],
+		"αᵍ": [0.26595744680851063, 0.641025641025641, 0.641025641025641],
+		"μᵍ": [1.0, 0.3125, 0.3125],
+		"θᵍ": [0.0, 0.0, 0.0],
+		"risk_reduction_dd": 0.0,  
+		"γᵍ": [0.003, 0.01, 0.08],
+		"risk_reduction_h": 0.1,
+		"ωᵍ": [0.0, 0.04, 0.3],
+		"risk_reduction_d": 0.05,
+		"ζᵍ": [0.12820512820512822, 0.12820512820512822, 0.12820512820512822],
+		"λᵍ": [1.0, 1.0, 1.0],
+		"ψᵍ": [0.14285714285714285, 0.14285714285714285, 0.14285714285714285],
+		"χᵍ": [0.047619047619047616, 0.047619047619047616, 0.047619047619047616],
+		"Λ": 0.02,
+		"Γ": 0.01,
+		"rᵥ": [0.0, 0.6],
+		"kᵥ": [0.0, 0.4],
+		"age_labels": ["Y", "M", "O"]
+	},
+	"vaccination":{
+		"ϵᵍ": [0.1 , 0.4 , 0.5],
+		"percentage_of_vacc_per_day": 0.005,
+		"start_vacc": 30,
+		"dur_vacc": 50,
+		"are_there_vaccines": true
+	},
+	"NPI":{
+		"κ₀s": [0.8],
+		"ϕs": [0.2],
+		"δs": [0.8],
+		"tᶜs": [100],
+		"are_there_npi": true
+	}
+}
