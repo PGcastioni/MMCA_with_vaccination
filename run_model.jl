@@ -191,9 +191,6 @@ M = length(M_coords)
 G_coords = map(String, pop_params_dict["age_labels"])
 G = length(G_coords)
 
-# Num. of vaccination statuses Vaccinated/Non-vaccinated
-V = length(epi_params_dict["kᵥ"])
-
 ####################################################
 #####   INITIALIZATION OF DATA Structures   ########
 ####################################################
@@ -203,7 +200,7 @@ population       = init_pop_param_struct(G, M, G_coords, pop_params_dict, metapo
 ## EPIDEMIC PARAMETERS 
 epi_params       = init_epi_parameters_struct(G, M, T, G_coords, epi_params_dict)
 
-@assert size(initial_compartments) == (G, M, V, epi_params.NumComps)
+@assert size(initial_compartments) == (G, M, epi_params.V, epi_params.NumComps)
 
 ##################################################
 
@@ -213,7 +210,7 @@ epi_params       = init_epi_parameters_struct(G, M, T, G_coords, epi_params_dict
 @info "\t- G (agent class) = " G
 @info "\t- M (n. of metapopulations) = "  M
 @info "\t- T (simulation steps) = " T
-@info "\t- V (vaccination states) = " V
+@info "\t- V (vaccination states) = " epi_params.V
 @info "\t- N. of epi compartments = " epi_params.NumComps
 
 # println("\t- Initial file = ", initial_compartments_path)
