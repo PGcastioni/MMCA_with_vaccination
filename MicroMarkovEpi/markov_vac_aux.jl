@@ -93,16 +93,20 @@ struct Epidemic_Params
     Λ::Float64
     Γ::Float64
     
-    T::Int64
-    V::Int64
-    
     # Epidemic parameter for vaccinations
     rᵥ::Array{Float64, 1}
     kᵥ::Array{Float64, 1}
 
-    # The total number of compartments
+    # The total number of agents, patches, time-steps, 
+    # vaccination-states, and compartments
+    G::Int64
+    M::Int64
+    T::Int64
+    V::Int64
     NumComps::Int64
+
     CompLabels::Array{String, 1}
+    VaccLabels::Array{String, 1}
 
     # Compartments evolution
     ρˢᵍᵥ::Array{Float64, 4}
@@ -117,7 +121,7 @@ struct Epidemic_Params
     ρᴿᵍᵥ::Array{Float64, 4}
     
     # Fraction of securely confined individuals for each strata and patch.
-    CHᵢᵍᵥ::Array{Float64, 3}
+    CHᵢᵍᵥ::Array{Float64, 4}
     
     # R_t related arrays
     Qᵢᵍ::Array{Float64, 3}
@@ -204,12 +208,12 @@ function Epidemic_Params(βᴵ::Float64,
                          kᵥ::Array{Float64, 1},
                          G::Int64,
                          M::Int64,
-                         T::Int64,
-                         V::Int64)
+                         T::Int64)
 
     NumComps = 10
+    V = 3
     CompLabels = ["S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D"]
-    
+    VaccLabels = ["NV", "V", "PV"]
     # Allocate memory for simulations
     ρˢᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴱᵍᵥ  = zeros(Float64, G, M, T, V)
@@ -221,14 +225,15 @@ function Epidemic_Params(βᴵ::Float64,
     ρᴴᴰᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴰᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴿᵍᵥ  = zeros(Float64, G, M, T, V)
-    CHᵢᵍᵥ  = zeros(Float64, G, M, V)
+    CHᵢᵍᵥ = zeros(Float64, G, M, T, V)
     Qᵢᵍ   = zeros(Float64, G, M, T)
     
     return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
                            copy(θᵍ), copy(γᵍ), copy(ζᵍ), copy(λᵍ), copy(ωᵍ),
-                           copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), T, V, copy(rᵥ), copy(kᵥ), 
-                           NumComps, CompLabels, ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ,
-                           ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, ρᴿᵍᵥ, CHᵢᵍᵥ, Qᵢᵍ)
+                           copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), copy(rᵥ), copy(kᵥ), 
+                           G, M, T, V, NumComps, CompLabels, VaccLabels, 
+                           ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ, ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, 
+                           ρᴿᵍᵥ, CHᵢᵍᵥ, Qᵢᵍ)
 end
 
 
@@ -247,8 +252,8 @@ function update_epidemic_params!(epi_params::Epidemic_Params, data_dict::Dict{St
   epi_params.ωᵍ = has_key("ωᵍ") ? data_dict["ωᵍ"] : epi_params.ωᵍ
   epi_params.ψᵍ = has_key("ψᵍ") ? data_dict["ψᵍ"] : epi_params.ψᵍ
   epi_params.χᵍ = has_key("χᵍ") ? data_dict["χᵍ"] : epi_params.χᵍ
-  epi_params.Λ = has_key("Λ") ? data_dict["Λ"] : epi_params.Λ
-  epi_params.Γ = has_key("Γ") ? data_dict["Γ"] : epi_params.Γ
+  epi_params.Λ  = has_key("Λ")  ? data_dict["Λ"] : epi_params.Λ
+  epi_params.Γ  = has_key("Γ")  ? data_dict["Γ"] : epi_params.Γ
   epi_params.rᵥ = has_key("rᵥ") ? data_dict["rᵥ"] : epi_params.rᵥ
   epi_params.kᵥ = has_key("kᵥ") ? data_dict["kᵥ"] : epi_params.kᵥ
 end
@@ -265,15 +270,15 @@ Reset the ρ's to reuse the structure and avoid additional allocations.
 function reset_epidemic_params!(epi_params::Epidemic_Params)
     epi_params.ρˢᵍᵥ .= 0.
     epi_params.ρˢᵍᵥ[:, :, :, 1] .= 1.
-    epi_params.ρᴱᵍᵥ .= 0.
-    epi_params.ρᴬᵍᵥ .= 0.
-    epi_params.ρᴵᵍᵥ .= 0.
+    epi_params.ρᴱᵍᵥ  .= 0.
+    epi_params.ρᴬᵍᵥ  .= 0.
+    epi_params.ρᴵᵍᵥ  .= 0.
     epi_params.ρᴾᴴᵍᵥ .= 0.
     epi_params.ρᴾᴰᵍᵥ .= 0.
     epi_params.ρᴴᴿᵍᵥ .= 0.
     epi_params.ρᴴᴰᵍᵥ .= 0.
-    epi_params.ρᴰᵍᵥ .= 0.
-    epi_params.ρᴿᵍᵥ .= 0.
+    epi_params.ρᴰᵍᵥ  .= 0.
+    epi_params.ρᴿᵍᵥ  .= 0.
     epi_params.CHᵢᵍᵥ .= 0.
 
     # Rt structures

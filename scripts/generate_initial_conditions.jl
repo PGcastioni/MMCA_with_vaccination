@@ -84,11 +84,11 @@ function main()
     population = init_pop_param_struct(G, M, G_coords, pop_params_dict, metapop_df, network_df)
     epi_params = init_epi_parameters_struct(G, M, T, G_coords, epi_params_dict)
 
-
-    V = epi_params.V
     N = epi_params.NumComps
     comp_coords = epi_params.CompLabels
-    V_coords = ["NV", "V1", "V2"]
+    
+    V = epi_params.V
+    V_coords = epi_params.VaccLabels
 
     # Loading initial
     conditions₀ = CSV.read(seeds_fname, DataFrame);
@@ -113,12 +113,12 @@ function main()
     compartments[:, :, V_idx, A₀_idx] .= A₀
 
     if output_format == "netcdf"
-        output_fname = joinpath(output_folder, "initial_condition.nc")
+        output_fname = joinpath(output_folder, "initial_conditions.nc")
         isfile(output_fname) && rm(output_fname)
         nccreate(output_fname, "data", "G", G_coords, "M", M_coords, "V", V_coords, "epi_states", comp_coords)
         ncwrite(compartments, output_fname, "data")
     elseif output_format == "hdf5"
-        output_fname = joinpath(output_folder, "initial_condition.h5")
+        output_fname = joinpath(output_folder, "initial_conditions.h5")
         isfile(output_fname) && rm(output_fname)
         h5open(output_fname, "w") do file
             write(file, "data", compartments)

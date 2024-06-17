@@ -145,7 +145,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             @simd for v in 1:V
                 
                 if tᶜ == t
-                    ρˢᵍᵥ[g, i, t, v] += CHᵢᵍᵥ[g, i, v]
+                    ρˢᵍᵥ[g, i, t, v] += CHᵢᵍᵥ[g, i, t, v]
                 end  
                 
                 # Infection probability
@@ -192,17 +192,16 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                 ρᴰᵍᵥ[g, i, t + 1, v] = ρᴰᵍᵥ[g, i, t, v] + ζᵍ[g] * ρᴾᴰᵍᵥ[g, i, t, v] +
                     ψᵍ[g] * ρᴴᴰᵍᵥ[g, i, t, v]
                 
-
                 if tᶜ == t
                     aux = ρˢᵍᵥ[g, i, t, v]
-                    ρˢᵍᵥ[g, i, t, v] -= CHᵢᵍᵥ[g, i, v] 
-                    CHᵢᵍᵥ[g, i, v] = CHᵢ * aux
+                    ρˢᵍᵥ[g, i, t, v] -= CHᵢᵍᵥ[g, i, t, v] 
+                    CHᵢᵍᵥ[g, i, t + 1, v] = CHᵢ * aux
                 end 
             end   
             
             # Reset values
             τᵢᵍᵥ[g, i, :] .= 0.
-	    # this should be one, based on the intial value provided in run_epidemic_spreading_mmca
+	        # this should be one, based on the intial value provided in run_epidemic_spreading_mmca
             Pᵢᵍᵥ[g, i, :] .= 0. 
         end
     end
@@ -354,7 +353,7 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴰᵍᵥ[:, :, t, :] .+
-                    epi_params.CHᵢᵍᵥ[:, :, :] ) .* population.nᵢᵍ[:, :])
+                    epi_params.CHᵢᵍᵥ[:, :, t, :] ) .* population.nᵢᵍ[:, :])
 
     sus3 = sum((epi_params.ρˢᵍᵥ[:, :, t, 3] ) .* population.nᵢᵍ[:, :])
 
@@ -383,7 +382,7 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, 1] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, 1] .+
                     epi_params.ρᴰᵍᵥ[:, :, t, 1] .+
-                    epi_params.CHᵢᵍᵥ[:, :, 1] ) .* population.nᵢᵍ[:, :]) / population.N
+                    epi_params.CHᵢᵍᵥ[:, :, t, 1] ) .* population.nᵢᵍ[:, :]) / population.N
 
     vaccine2 = sum((epi_params.ρˢᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴾᴰᵍᵥ[:, :, t, 2] .+
@@ -395,7 +394,7 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴰᵍᵥ[:, :, t, 2] .+
-                    epi_params.CHᵢᵍᵥ[:, :, 2] ) .* population.nᵢᵍ[:, :]) / population.N
+                    epi_params.CHᵢᵍᵥ[:, :, t, 2] ) .* population.nᵢᵍ[:, :]) / population.N
 
     vaccine3 = sum((epi_params.ρˢᵍᵥ[:, :, t, 3] .+
                     epi_params.ρᴾᴰᵍᵥ[:, :, t, 3] .+
@@ -407,7 +406,7 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, 3] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, 3] .+
                     epi_params.ρᴰᵍᵥ[:, :, t, 3] .+
-                    epi_params.CHᵢᵍᵥ[:, :, 3] ) .* population.nᵢᵍ[:, :]) / population.N
+                    epi_params.CHᵢᵍᵥ[:, :, t, 3] ) .* population.nᵢᵍ[:, :]) / population.N
 
     @printf("Time: %d, players: %.2f, sus3: %.2f, cases3: %.2f, deaths: %.2f, vaccine1 = %.2f, vaccine2: %.2f, vaccine3: %.2f\n",
             t, players, sus3, cases3, deaths, vaccine1, vaccine2, vaccine3 )
