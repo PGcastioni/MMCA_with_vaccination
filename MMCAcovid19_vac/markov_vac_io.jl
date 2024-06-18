@@ -195,10 +195,7 @@ function init_epi_parameters_struct(G::Int64, M::Int64, T::Int64,
     # Relative risk reduction of the probability of transmission
     kᵥ = Float64.(epi_params_dict["kᵥ"])
 
-    # Num. of vaccination statuses Vaccinated/Non-vaccinated
-    V = length(kᵥ)
-
-    return Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, Λ, Γ, rᵥ, kᵥ, G, M, T, V)
+    return Epidemic_Params(βᴵ, βᴬ, ηᵍ, αᵍ, μᵍ, θᵍ, γᵍ, ζᵍ, λᵍ, ωᵍ, ψᵍ, χᵍ, Λ, Γ, rᵥ, kᵥ, G, M, T)
 end
 
 function init_NPI_parameters_struct(npi_params_dict::Dict, kappa0_filename::String)
@@ -324,14 +321,15 @@ function save_simulation_netCDF( epi_params::Epidemic_Params,
                                  G_coords = nothing,
                                  M_coords = nothing,
                                  T_coords = nothing,
-                                 V_coords = ["NV", "V"]
+                                 V_coords = nothing
                                 )
     G = population.G
     M = population.M
     T = epi_params.T
     V = epi_params.V
     S = epi_params.NumComps
-    comp_coords = epi_params.CompLabels
+    S_coords = epi_params.CompLabels
+    V_coords = epi_params.VaccLabels
 
     if isnothing(G_coords)
         G_coords = collect(1:G)
@@ -343,9 +341,10 @@ function save_simulation_netCDF( epi_params::Epidemic_Params,
         T_coords = collect(1:T) 
     end
 
-
     compartments = zeros(Float64, G, M, T, V, S);
-    compartments[:, :, :, :, 1]  .= epi_params.ρˢᵍᵥ .* population.nᵢᵍ
+
+    # Adding 
+    compartments[:, :, :, :, 1]  .= (epi_params.ρˢᵍᵥ + epi_params.CHᵢᵍᵥ) .* population.nᵢᵍ
     compartments[:, :, :, :, 2]  .= epi_params.ρᴱᵍᵥ .* population.nᵢᵍ
     compartments[:, :, :, :, 3]  .= epi_params.ρᴬᵍᵥ .* population.nᵢᵍ
     compartments[:, :, :, :, 4]  .= epi_params.ρᴵᵍᵥ .* population.nᵢᵍ
@@ -357,7 +356,7 @@ function save_simulation_netCDF( epi_params::Epidemic_Params,
     compartments[:, :, :, :, 10] .= epi_params.ρᴰᵍᵥ .* population.nᵢᵍ
     isfile(output_fname) && rm(output_fname)
 
-    nccreate(output_fname, "data", "G", G_coords, "M", M_coords, "T", T_coords, "V", V_coords, "epi_states", collect(comp_coords))
+    nccreate(output_fname, "data", "G", G_coords, "M", M_coords, "T", T_coords, "V", V_coords, "epi_states", S_coords)
     ncwrite(compartments, output_fname, "data")
 
 end

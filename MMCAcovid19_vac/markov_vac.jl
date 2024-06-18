@@ -144,7 +144,7 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
             @simd for v in 1:V
                 
                 if tᶜ == t
-                    ρˢᵍᵥ[g, i, t, v] += CHᵢᵍᵥ[g, i, v]
+                    ρˢᵍᵥ[g, i, t, v] += CHᵢᵍᵥ[g, i, t, v]
                 end  
                 
                 # Infection probability
@@ -191,17 +191,17 @@ function update_prob!(Pᵢᵍᵥ::Array{Float64, 3},
                 ρᴰᵍᵥ[g, i, t + 1, v] = ρᴰᵍᵥ[g, i, t, v] + ζᵍ[g] * ρᴾᴰᵍᵥ[g, i, t, v] +
                     ψᵍ[g] * ρᴴᴰᵍᵥ[g, i, t, v]
                 
-                ### Pier: I moved inside the loop all the things that were outside before
-                # Reset values
-                τᵢᵍᵥ[g, i, :] .= 0.
-                Pᵢᵍᵥ[g, i, :] .= 0.
-
                 if tᶜ == t
                     aux = ρˢᵍᵥ[g, i, t, v]
-                    ρˢᵍᵥ[g, i, t, v] -= CHᵢᵍᵥ[g, i, v] 
-                    CHᵢᵍᵥ[g, i, v] = CHᵢ * aux
+                    ρˢᵍᵥ[g, i, t, v] -= CHᵢᵍᵥ[g, i, t, v] 
+                    CHᵢᵍᵥ[g, i, t + 1, v] = CHᵢ * aux
                 end 
-            end            
+            end   
+            
+            # Reset values
+            τᵢᵍᵥ[g, i, :] .= 0.
+	        # this should be one, based on the intial value provided in run_epidemic_spreading_mmca
+            Pᵢᵍᵥ[g, i, :] .= 0. 
         end
     end
     
@@ -352,7 +352,7 @@ function print_status(epi_params::Epidemic_Params,
                     epi_params.ρᴴᴿᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴿᵍᵥ[:, :, t, :] .+
                     epi_params.ρᴰᵍᵥ[:, :, t, :] .+
-                    epi_params.CHᵢᵍᵥ[:, :, :] ) .* population.nᵢᵍ[:, :])
+                    epi_params.CHᵢᵍᵥ[:, :, t, :] ) .* population.nᵢᵍ[:, :])
 
     infected = sum(epi_params.ρᴵᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :] .+
                    epi_params.ρᴬᵍᵥ[:, :, t, :] .* population.nᵢᵍ[:, :])
@@ -371,6 +371,7 @@ function print_status(epi_params::Epidemic_Params,
 
     
     vaccinated = sum((epi_params.ρˢᵍᵥ[:, :, t, 2] .+
+                    epi_params.CHᵢᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴾᴰᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴱᵍᵥ[:, :, t, 2] .+
                     epi_params.ρᴬᵍᵥ[:, :, t, 2] .+

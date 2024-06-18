@@ -93,16 +93,20 @@ struct Epidemic_Params
     Λ::Float64
     Γ::Float64
     
-    T::Int64
-    V::Int64
-    
     # Epidemic parameter for vaccinations
     rᵥ::Array{Float64, 1}
     kᵥ::Array{Float64, 1}
 
-    # The total number of compartments
+    # The total number of agents, patches, time-steps, 
+    # vaccination-states, and compartments
+    G::Int64
+    M::Int64
+    T::Int64
+    V::Int64
     NumComps::Int64
+
     CompLabels::Array{String, 1}
+    VaccLabels::Array{String, 1}
 
     # Compartments evolution
     ρˢᵍᵥ::Array{Float64, 4}
@@ -117,7 +121,7 @@ struct Epidemic_Params
     ρᴿᵍᵥ::Array{Float64, 4}
     
     # Fraction of securely confined individuals for each strata and patch.
-    CHᵢᵍᵥ::Array{Float64, 3}
+    CHᵢᵍᵥ::Array{Float64, 4}
     
     # R_t related arrays
     Qᵢᵍ::Array{Float64, 3}
@@ -204,12 +208,12 @@ function Epidemic_Params(βᴵ::Float64,
                          kᵥ::Array{Float64, 1},
                          G::Int64,
                          M::Int64,
-                         T::Int64,
-                         V::Int64)
+                         T::Int64)
 
     NumComps = 10
+    V = 2
     CompLabels = ["S", "E", "A", "I", "PH", "PD", "HR", "HD", "R", "D"]
-    
+    VaccLabels = ["NV", "V"]
     # Allocate memory for simulations
     ρˢᵍᵥ  = ones(Float64, G, M, T, V)
     ρᴱᵍᵥ  = zeros(Float64, G, M, T, V)
@@ -221,14 +225,15 @@ function Epidemic_Params(βᴵ::Float64,
     ρᴴᴰᵍᵥ = zeros(Float64, G, M, T, V)
     ρᴰᵍᵥ  = zeros(Float64, G, M, T, V)
     ρᴿᵍᵥ  = zeros(Float64, G, M, T, V)
-    CHᵢᵍᵥ = zeros(Float64, G, M, V)
+    CHᵢᵍᵥ = zeros(Float64, G, M, T, V)
     Qᵢᵍ   = zeros(Float64, G, M, T)
     
     return Epidemic_Params([βᴵ], [βᴬ], copy(ηᵍ), copy(αᵍ), copy(μᵍ),
                            copy(θᵍ), copy(γᵍ), copy(ζᵍ), copy(λᵍ), copy(ωᵍ),
-                           copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), T, V, copy(rᵥ), copy(kᵥ), 
-                           NumComps, CompLabels, ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ,
-                           ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, ρᴿᵍᵥ, CHᵢᵍᵥ, Qᵢᵍ)
+                           copy(ψᵍ), copy(χᵍ), copy(Λ), copy(Γ), copy(rᵥ), copy(kᵥ), 
+                           G, M, T, V, NumComps, CompLabels, VaccLabels, 
+                           ρˢᵍᵥ, ρᴱᵍᵥ, ρᴬᵍᵥ, ρᴵᵍᵥ, ρᴾᴴᵍᵥ, ρᴾᴰᵍᵥ, ρᴴᴿᵍᵥ, ρᴴᴰᵍᵥ, ρᴰᵍᵥ, 
+                           ρᴿᵍᵥ, CHᵢᵍᵥ, Qᵢᵍ)
 end
 
 
