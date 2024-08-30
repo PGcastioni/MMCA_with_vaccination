@@ -1,53 +1,53 @@
-"Code", "Name", "Population", "Superficie"
-1, Araba / Álava, 319227, 3037
-2, Albacete, 402318, 14924
-3, Alicante, 1934127, 5817
-4, Almería, 702819, 8775
-5, Ávila, 172704, 8050
-6, Badajoz, 693921, 21766
-7, Illes Balears, 1113114, 4992
-8, Barcelona, 5529099, 7728
-9, Burgos, 375657, 14292
-10, Cáceres, 415446, 19868
-11, Cádiz, 1243519, 7440
-12, Castellón, 604344, 6636
-13, Ciudad Real, 530175, 19813
-14, Córdoba, 805857, 13771
-15, A Coruña, 1147124, 7950
-16, Cuenca, 219138, 17140
-17, Girona, 756810, 5910
-18, Granada, 924550, 12647
-19, Guadalajara, 256461, 12214
-20, Gipuzkoa, 709607, 1980
-21, Huelva, 521968, 10128
-22, Huesca, 228361, 15636
-23, Jaén, 670600, 13496
-24, León, 497799, 15581
-25, Lleida, 442308, 12172
-26, La Rioja, 322955, 5045
-27, Lugo, 351530, 9856
-28, Madrid, 6489680, 8028
-29, Málaga, 1625827, 7306
-30, Murcia, 1470069, 11314
-31, Navarra, 642051, 10391
-32, Ourense, 333257, 7273
-33, Asturias, 1081487, 10604
-34, Palencia, 171668, 8052
-35, Las Palmas, 1096980, 4066
-36, Pontevedra, 963511, 4495
-37, Salamanca, 352986, 12350
-38, Santa Cruz de Tenerife, 1029789, 3381
-39, Cantabria, 593121, 5321
-40, Segovia, 164169, 6921
-41, Sevilla, 1928962, 14036
-42, Soria, 95223, 10306
-43, Tarragona, 811401, 6303
-44, Teruel, 144607, 14810
-45, Toledo, 707242, 15370
-46, Valencia, 2578719, 10807
-47, Valladolid, 534874, 8110
-48, Bizkaia, 1155772, 2217
-49, Zamora, 193383, 10561
-50, Zaragoza, 973325, 17274
-51, Ceuta, 82376, 19
-52, Melilla, 78476, 13
+Code,Name,Population,Surface
+01, Araba / Álava,319227,3037
+02, Albacete,402318,14924
+03, Alicante,1934127,5817
+04, Almería,702819,8775
+05, Ávila,172704,8050
+06, Badajoz,693921,21766
+07, Illes Balears,1113114,4992
+08, Barcelona,5529099,7728
+09, Burgos,375657,14292
+10, Cáceres,415446,19868
+11, Cádiz,1243519,7440
+12, Castellón,604344,6636
+13, Ciudad Real,530175,19813
+14, Córdoba,805857,13771
+15, A Coruña,1147124,7950
+16, Cuenca,219138,17140
+17, Girona,756810,5910
+18, Granada,924550,12647
+19, Guadalajara,256461,12214
+20, Gipuzkoa,709607,1980
+21, Huelva,521968,10128
+22, Huesca,228361,15636
+23, Jaén,670600,13496
+24, León,497799,15581
+25, Lleida,442308,12172
+26, La Rioja,322955,5045
+27, Lugo,351530,9856
+28, Madrid,6489680,8028
+29, Málaga,1625827,7306
+30, Murcia,1470069,11314
+31, Navarra,642051,10391
+32, Ourense,333257,7273
+33, Asturias,1081487,10604
+34, Palencia,171668,8052
+35, Las Palmas,1096980,4066
+36, Pontevedra,963511,4495
+37, Salamanca,352986,12350
+38, Santa Cruz de Tenerife,1029789,3381
+39, Cantabria,593121,5321
+40, Segovia,164169,6921
+41, Sevilla,1928962,14036
+42, Soria,95223,10306
+43, Tarragona,811401,6303
+44, Teruel,144607,14810
+45, Toledo,707242,15370
+46, Valencia,2578719,10807
+47, Valladolid,534874,8110
+48, Bizkaia,1155772,2217
+49, Zamora,193383,10561
+50, Zaragoza,973325,17274
+51, Ceuta,82376,19
+52, Melilla,78476,13
