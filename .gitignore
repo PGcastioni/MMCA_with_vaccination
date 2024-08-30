@@ -36,6 +36,6 @@ ENV/
 Project.toml
 Manifest.toml
 
-test/output/
-/home/imartin3/Documents/MMCA_with_vaccination/experiments/
-/home/imartin3/Documents/MMCA_with_vaccination/test/
+
+experiments/
+test/
