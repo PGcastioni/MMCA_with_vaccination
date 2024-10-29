@@ -134,7 +134,7 @@ function init_pop_param_struct(G::Int64, M::Int64,
     # Degree of mobility per strata
     pᵍ = Float64.(pop_params_dict["pᵍ"])
     # Density factor
-    ξ = pop_params_dict["σ"]
+    ξ = pop_params_dict["ξ"]
     # Average household size
     σ = pop_params_dict["σ"]
 
